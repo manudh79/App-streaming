@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0" />
+  <title>Simulador Streaming - Overlay Árabe</title>
+  <style>
+    html,body{height:100%;margin:0;font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    #app{display:flex;flex-direction:column;height:100vh;background:#111;color:#fff}
+    .top{display:flex;gap:8px;padding:8px;align-items:center}
+    button{padding:8px 12px;border-radius:8px;border:0;background:#2196f3;color:white;font-weight:600}
+    button.secondary{background:#555}
+    #preview{flex:1;position:relative;display:flex;align-items:center;justify-content:center;background:#000}
+    canvas{max-width:100%;height:auto;border-radius:8px}
+    .controls{display:flex;gap:8px;align-items:center}
+    .badge{background:rgba(0,0,0,0.45);padding:6px 8px;border-radius:8px}
+    .config{display:flex;gap:8px;align-items:center}
+    input[type=range]{width:140px}
+    .small{font-size:12px;color:#ddd}
+    /* Chat container drawn inside canvas, this CSS is only for the UI controls area */
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="top">
+      <div class="controls">
+        <button id="startCam">Usar cámara trasera</button>
+        <button id="startRec">Iniciar grabación</button>
+        <button id="stopRec" class="secondary" disabled>Parar y descargar</button>
+        <label class="badge small">FPS: <span id="fpsVal">30</span></label>
+        <label class="badge small">Comentarios: <span id="chatSpeedVal">2s</span></label>
+      </div>
+      <div style="flex:1"></div>
+      <div class="config">
+        <label class="small">Velocidad chat</label>
+        <input id="chatSpeed" type="range" min="400" max="3000" step="100" value="2000">
+        <label class="small">Tamaño texto</label>
+        <input id="textSize" type="range" min="12" max="36" step="1" value="20">
+      </div>
+    </div>
+
+    <div id="preview">
+      <video id="video" playsinline style="display:none"></video>
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div style="padding:8px;display:flex;gap:8px;align-items:center">
+      <input id="customComment" placeholder="Escribe comentario en árabe aquí" style="flex:1;padding:8px;border-radius:8px;border:1px solid #444;background:#000;color:#fff">
+      <button id="sendComment">Enviar comentario</button>
+      <button id="toggleOverlay" class="secondary">Ocultar overlay</button>
+    </div>
+
+    <div style="padding:8px;font-size:12px;color:#bbb">
+      Tips: para que la cámara trasera funcione en iOS/Safari necesitas HTTPS y permisos; algunos navegadores en iPad piden que el dispositivo esté desbloqueado. La grabación se hace combinando el canvas que contiene el vídeo + overlay.
+    </div>
+  </div>
+
+<script>
+// --- Config y elementos ---
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const startCamBtn = document.getElementById('startCam');
+const startRecBtn = document.getElementById('startRec');
+const stopRecBtn = document.getElementById('stopRec');
+const chatSpeedControl = document.getElementById('chatSpeed');
+const chatSpeedVal = document.getElementById('chatSpeedVal');
+const textSizeControl = document.getElementById('textSize');
+const fpsVal = document.getElementById('fpsVal');
+const sendCommentBtn = document.getElementById('sendComment');
+const customCommentInput = document.getElementById('customComment');
+const toggleOverlayBtn = document.getElementById('toggleOverlay');
+
+let overlayVisible = true;
+let recording = false;
+let mediaRecorder;
+let recordedBlobs = [];
+let drawLoopId;
+let fps = 30;
+let chatSpeed = parseInt(chatSpeedControl.value);
+let textSize = parseInt(textSizeControl.value);
+
+// --- Mensajes de ejemplo en árabe (rtl) ---
+const arabicComments = [
+  'ما هذا البث المباشر الرائع! 👍',
+  'أين أنتم الآن؟',
+  'موسيقى الخلفية جميلة 🎵',
+  'تحياتنا من جزر الكناري 🌴',
+  'هل يمكن مشاهدة الإعادة؟',
+  'حظاً موفقاً! ❤️',
+  'تأثيرات الشاشة ممتازة!',
+  'كم عمر هذا المكان؟',
+  'محتوى مفيد جداً، شكراً!',
+  'أحب الجمهور هنا 🔥'
+];
+
+// Cola de comentarios visibles (cada uno tiene y position)
+let visibleComments = [];
+let reactions = [];
+const reactionEmojis = ['❤️','🔥','😂','👏','👍'];
+
+// Añadir comentarios periódicamente
+let chatTimer = null;
+function startChatTimer(){
+  if(chatTimer) clearInterval(chatTimer);
+  chatTimer = setInterval(()=>{
+    addRandomArabicComment();
+  }, chatSpeed);
+}
+
+function addRandomArabicComment(){
+  const text = arabicComments[Math.floor(Math.random()*arabicComments.length)];
+  const item = { text, y: canvas.height - 40 - Math.random()*100, alpha:1 };
+  visibleComments.push(item);
+}
+
+function addCustomComment(text){
+  if(!text) return;
+  const item = { text, y: canvas.height - 40, alpha:1 };
+  visibleComments.push(item);
+}
+
+function spawnReaction(){
+  const emoji = reactionEmojis[Math.floor(Math.random()*reactionEmojis.length)];
+  const x = canvas.width - 60 - Math.random()*120;
+  const rx = { emoji, x, y: canvas.height - 80, vy: -1 - Math.random()*1.5, alpha:1 };
+  reactions.push(rx);
+}
+
+// --- Cámara ---
+async function startRearCamera(){
+  stopStreams();
+  const constraints = {
+    audio: false,
+    video: { facingMode: { ideal: 'environment' } }
+  };
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
+    await video.play();
+    setupCanvasSize();
+    startChatTimer();
+    startDrawLoop();
+  }catch(e){
+    alert('No se pudo iniciar la cámara: '+e.message+'\nPrueba permitiendo acceso o usando otro navegador.');
+    console.error(e);
+  }
+}
+
+function stopStreams(){
+  if(video.srcObject){
+    const tracks = video.srcObject.getTracks();
+    tracks.forEach(t=>t.stop());
+    video.srcObject = null;
+  }
+}
+
+function setupCanvasSize(){
+  // Tamaño basado en vídeo (mantener relación)
+  const vw = video.videoWidth || 1280;
+  const vh = video.videoHeight || 720;
+  // limitar a pantalla
+  const maxW = Math.min(window.innerWidth-16, vw);
+  const aspect = vh>0? vw/vh : 16/9;
+  canvas.width = maxW;
+  canvas.height = Math.round(maxW / aspect);
+}
+
+// --- Dibujo ---
+function startDrawLoop(){
+  if(drawLoopId) cancelAnimationFrame(drawLoopId);
+  const interval = 1000 / fps;
+  let last = performance.now();
+  function loop(now){
+    const dt = now - last;
+    if(dt >= interval){
+      last = now - (dt % interval);
+      drawFrame();
+    }
+    drawLoopId = requestAnimationFrame(loop);
+  }
+  drawLoopId = requestAnimationFrame(loop);
+}
+
+function drawFrame(){
+  if(!video || video.readyState < 2){
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    return;
+  }
+  // Dibujar vídeo ajustado al canvas (cover)
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const cw = canvas.width, ch = canvas.height;
+  const vr = vw/vh;
+  const cr = cw/ch;
+  let sx=0, sy=0, sw=vw, sh=vh;
+  if(vr > cr){
+    // vídeo más ancho -> recortar en X
+    const newW = Math.round(vh * cr);
+    sx = Math.round((vw - newW)/2);
+    sw = newW;
+  }else{
+    // vídeo más alto -> recortar en Y
+    const newH = Math.round(vw / cr);
+    sy = Math.round((vh - newH)/2);
+    sh = newH;
+  }
+  ctx.drawImage(video, sx, sy, sw, sh, 0,0,cw,ch);
+
+  if(overlayVisible){
+    drawOverlay();
+  }
+}
+
+function drawOverlay(){
+  // sombreado inferior
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(0, canvas.height - 140, canvas.width, 140);
+
+  // Chat box (derecha) - RTL para árabe
+  const boxW = Math.min(320, canvas.width*0.45);
+  const boxX = canvas.width - boxW - 12;
+  const boxY = 12;
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  roundRect(ctx, boxX, boxY, boxW, canvas.height - 160, 12, true, false);
+
+  // Dibujar comentarios (stacked bottom-up)
+  ctx.save();
+  ctx.translate(boxX+12, 0);
+  ctx.textAlign = 'right';
+  ctx.direction = 'rtl';
+  ctx.font = `${textSize}px sans-serif`;
+  ctx.fillStyle = '#fff';
+  const lineHeight = textSize + 8;
+
+  // actualizar y dibujar
+  for(let i=visibleComments.length-1;i>=0;i--){
+    const c = visibleComments[i];
+    c.y -= 0.4; // suben lentamente
+    c.alpha -= 0.002;
+    if(c.alpha <= 0 || c.y < 20) visibleComments.splice(i,1);
+    else{
+      ctx.globalAlpha = Math.max(0, Math.min(1, c.alpha));
+      // dibujar fondo y texto RTL
+      const text = c.text;
+      // medir y dibujar
+      const maxTextW = boxW - 24;
+      const lines = wrapTextArabic(ctx, text, maxTextW);
+      for(let li=0; li<lines.length; li++){
+        const y = c.y - (lines.length-1-li)*lineHeight;
+        // fondo
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        const tw = ctx.measureText(lines[li]).width;
+        ctx.fillRect(-tw-12, y - textSize, tw+16, textSize+8);
+        // texto
+        ctx.fillStyle = '#fff';
+        ctx.fillText(lines[li], 0, y);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      }
+    }
+  }
+  ctx.restore();
+
+  // Reacciones flotantes
+  for(let i=reactions.length-1;i>=0;i--){
+    const r = reactions[i];
+    r.y += r.vy;
+    r.alpha -= 0.01;
+    ctx.globalAlpha = Math.max(0, r.alpha);
+    ctx.font = '28px sans-serif';
+    ctx.fillText(r.emoji, r.x, r.y);
+    if(r.alpha <= 0 || r.y < 20) reactions.splice(i,1);
+  }
+  ctx.globalAlpha = 1;
+
+  // contador simple arriba a la izquierda
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  roundRect(ctx, 12, 12, 140, 40, 10, true, false);
+  ctx.fillStyle = '#fff';
+  ctx.font = '16px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Viendo: 1.2k', 22, 38);
+}
+
+function roundRect(ctx, x, y, w, h, r, fill, stroke){
+  if (typeof stroke === 'undefined') stroke = true;
+  if (typeof r === 'undefined') r = 5;
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+  if(fill) ctx.fill();
+  if(stroke) ctx.stroke();
+}
+
+// simple text wrap that preserves RTL looking visually ok
+function wrapTextArabic(ctx, text, maxWidth){
+  // split by spaces and try to pack
+  const words = text.split(' ');
+  let lines = [];
+  let cur = '';
+  for(let w of words){
+    const test = cur? (w + ' ' + cur) : w; // keep rtl-ish ordering
+    const width = ctx.measureText(test).width;
+    if(width > maxWidth){
+      if(cur) lines.push(cur);
+      cur = w;
+    }else cur = test;
+  }
+  if(cur) lines.push(cur);
+  return lines.slice(0,4); // max 4 lines
+}
+
+// --- Grabación ---
+function startRecording(){
+  if(recording) return;
+  const stream = canvas.captureStream(fps);
+  recordedBlobs = [];
+  const options = {mimeType: 'video/webm;codecs=vp9'};
+  try{
+    mediaRecorder = new MediaRecorder(stream, options);
+  }catch(e){
+    try{ mediaRecorder = new MediaRecorder(stream); }catch(err){
+      alert('Tu navegador no soporta MediaRecorder para canvas. Usa Chrome/Edge/Firefox en Android o Safari+ScreenRecord en iOS.');
+      console.error(err); return;
+    }
+  }
+  mediaRecorder.ondataavailable = (e)=>{ if(e.data && e.data.size>0) recordedBlobs.push(e.data); };
+  mediaRecorder.onstop = saveRecording;
+  mediaRecorder.start();
+  recording = true;
+  startRecBtn.disabled = true;
+  stopRecBtn.disabled = false;
+}
+
+function stopRecording(){
+  if(!recording) return;
+  mediaRecorder.stop();
+  recording = false;
+  startRecBtn.disabled = false;
+  stopRecBtn.disabled = true;
+}
+
+function saveRecording(){
+  const blob = new Blob(recordedBlobs, {type: 'video/webm'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display='none';
+  a.href = url;
+  a.download = 'stream_overlay.webm';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+// Eventos UI
+startCamBtn.addEventListener('click', ()=>{
+  startRearCamera();
+});
+
+startRecBtn.addEventListener('click', ()=>{
+  startRecording();
+});
+stopRecBtn.addEventListener('click', ()=>{
+  stopRecording();
+});
+
+chatSpeedControl.addEventListener('input', ()=>{
+  chatSpeed = parseInt(chatSpeedControl.value);
+  chatSpeedVal.textContent = (chatSpeed/1000)+'s';
+  startChatTimer();
+});
+
+textSizeControl.addEventListener('input', ()=>{
+  textSize = parseInt(textSizeControl.value);
+});
+
+sendCommentBtn.addEventListener('click', ()=>{
+  const txt = customCommentInput.value.trim();
+  if(txt) addCustomComment(txt);
+  customCommentInput.value = '';
+  // spawn also a reaction to simulate engagement
+  spawnReaction();
+});
+
+toggleOverlayBtn.addEventListener('click', ()=>{
+  overlayVisible = !overlayVisible;
+  toggleOverlayBtn.textContent = overlayVisible? 'Ocultar overlay' : 'Mostrar overlay';
+});
+
+// Periodically spawn reactions to simulate activity
+setInterval(()=>{ if(Math.random() < 0.45) spawnReaction(); }, 1000);
+
+// Ajustar tamaño canvas al rotar/resize
+window.addEventListener('resize', ()=>{ if(video && video.videoWidth) setupCanvasSize(); });
+
+// Inicial: valores UI
+chatSpeedVal.textContent = (chatSpeed/1000)+'s';
+fpsVal.textContent = fps;
+
+// -- Helpers para limpiar al salir --
+window.addEventListener('pagehide', ()=>{ stopStreams(); if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); });
+
+</script>
+</body>
+</html>
