@@ -1,88 +1,116 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0" />
-  <title>Simulador Streaming - Overlay Árabe</title>
-  <style>
-    html,body{height:100%;margin:0;font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
-    #app{display:flex;flex-direction:column;height:100vh;background:#111;color:#fff}
-    .top{display:flex;gap:8px;padding:8px;align-items:center}
-    button{padding:8px 12px;border-radius:8px;border:0;background:#2196f3;color:white;font-weight:600}
-    button.secondary{background:#555}
-    #preview{flex:1;position:relative;display:flex;align-items:center;justify-content:center;background:#000}
-    canvas{max-width:100%;height:auto;border-radius:8px}
-    .controls{display:flex;gap:8px;align-items:center}
-    .badge{background:rgba(0,0,0,0.45);padding:6px 8px;border-radius:8px}
-    .config{display:flex;gap:8px;align-items:center}
-    input[type=range]{width:140px}
-    .small{font-size:12px;color:#ddd}
-    /* Chat container drawn inside canvas, this CSS is only for the UI controls area */
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Live Overlay — Preview</title>
+<style>
+  :root{
+    --accent:#e63946;
+    --muted: rgba(0,0,0,0.45);
+    --panel: rgba(0,0,0,0.55);
+    --text:#fff;
+    --ui-radius:12px;
+  }
+  html,body{height:100%;margin:0;background:#000;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+  #app{height:100vh;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden;color:var(--text);}
+  /* top bar */
+  .topbar{position:absolute;left:12px;top:12px;z-index:40;display:flex;align-items:center;gap:10px;}
+  .badge{background:var(--panel);padding:8px 12px;border-radius:999px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.45);}
+  /* right small end button */
+  .endBtn{position:absolute;right:12px;top:12px;z-index:40;background:var(--panel);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-weight:700;cursor:pointer}
+  .endBtn:hover{transform:scale(1.03)}
+  /* video area */
+  #preview{flex:1;position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  video{display:block;min-width:100%;min-height:100%;object-fit:cover;transform:scaleX(-1);} /* mirror so it feels natural when front; we'll flip if rear */
+  canvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:20}
+  /* comments container on the right (overlay) */
+  .commentsBox{position:absolute;right:12px;top:70px;z-index:30;display:flex;flex-direction:column;gap:8px;max-width:36%;min-width:180px;pointer-events:none;}
+  .comment{
+    background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.32));
+    padding:8px 12px;border-radius:10px;color:var(--text);font-size:16px;line-height:1.1;direction:rtl;
+    box-shadow:0 6px 18px rgba(0,0,0,0.45);
+    opacity:0; transform: translateY(8px) scale(0.99); transition: transform 300ms ease, opacity 400ms ease;
+    pointer-events:none;
+  }
+  .comment.show{opacity:1; transform: translateY(0) scale(1);}
+  .comment .meta{font-size:12px;opacity:0.85;margin-bottom:4px;text-align:left}
+  /* reaction floating */
+  .reaction{position:absolute;z-index:35;font-size:26px;pointer-events:none;will-change:transform,opacity;}
+  /* hidden controls panel (appears after long press) */
+  .controlsPanel{
+    position: absolute; left:50%; bottom:22px; transform:translateX(-50%); z-index:50;
+    background:rgba(0,0,0,0.6); padding:10px 12px; border-radius:999px; display:flex; gap:10px; align-items:center;
+    box-shadow:0 10px 30px rgba(0,0,0,0.6); opacity:0; pointer-events:none; transition:opacity 220ms ease;
+  }
+  .controlsPanel.visible{opacity:1; pointer-events:auto;}
+  .iconBtn{width:56px;height:56px;border-radius:999px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;border:0;color:var(--text);font-weight:700}
+  .iconBtn.record{background:linear-gradient(90deg,var(--accent), #ff7b7b);box-shadow:0 8px 30px rgba(230,57,70,0.18)}
+  /* small footer prompt for first time */
+  .hint{position:absolute;left:12px;bottom:16px;z-index:40;background:var(--panel);padding:8px 12px;border-radius:10px;font-size:13px;opacity:0.9}
+  /* styles to make it feel native */
+  @media (max-width:720px){
+    .commentsBox{max-width:58%;right:10px;top:86px}
+    .iconBtn{width:52px;height:52px}
+  }
+</style>
 </head>
 <body>
-  <div id="app">
-    <div class="top">
-      <div class="controls">
-        <button id="startCam">Usar cámara trasera</button>
-        <button id="startRec">Iniciar grabación</button>
-        <button id="stopRec" class="secondary" disabled>Parar y descargar</button>
-        <label class="badge small">FPS: <span id="fpsVal">30</span></label>
-        <label class="badge small">Comentarios: <span id="chatSpeedVal">2s</span></label>
-      </div>
-      <div style="flex:1"></div>
-      <div class="config">
-        <label class="small">Velocidad chat</label>
-        <input id="chatSpeed" type="range" min="400" max="3000" step="100" value="2000">
-        <label class="small">Tamaño texto</label>
-        <input id="textSize" type="range" min="12" max="36" step="1" value="20">
-      </div>
-    </div>
-
-    <div id="preview">
-      <video id="video" playsinline style="display:none"></video>
-      <canvas id="canvas"></canvas>
-    </div>
-
-    <div style="padding:8px;display:flex;gap:8px;align-items:center">
-      <input id="customComment" placeholder="Escribe comentario en árabe aquí" style="flex:1;padding:8px;border-radius:8px;border:1px solid #444;background:#000;color:#fff">
-      <button id="sendComment">Enviar comentario</button>
-      <button id="toggleOverlay" class="secondary">Ocultar overlay</button>
-    </div>
-
-    <div style="padding:8px;font-size:12px;color:#bbb">
-      Tips: para que la cámara trasera funcione en iOS/Safari necesitas HTTPS y permisos; algunos navegadores en iPad piden que el dispositivo esté desbloqueado. La grabación se hace combinando el canvas que contiene el vídeo + overlay.
-    </div>
+<div id="app">
+  <div class="topbar">
+    <div class="badge" id="viewers">👁️ 1.2k</div>
   </div>
+  <div class="endBtn" id="endBtn" title="End">✖</div>
+
+  <div id="preview">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+
+    <!-- comments DOM (for better layout control) -->
+    <div class="commentsBox" id="commentsBox" aria-hidden="true"></div>
+
+    <!-- reactions are created dynamically -->
+    <div class="controlsPanel" id="controlsPanel" aria-hidden="true">
+      <button class="iconBtn" id="switchCam" title="Switch camera">🔄</button>
+      <button class="iconBtn record" id="recordBtn" title="Record">⏺</button>
+      <button class="iconBtn" id="stopBtn" title="Stop" disabled>⏹</button>
+      <button class="iconBtn" id="downloadBtn" title="Download" disabled>⬇️</button>
+    </div>
+
+    <div class="hint" id="hint">Long press center to open controls</div>
+  </div>
+</div>
 
 <script>
-// --- Config y elementos ---
+/* ---------- Config ---------- */
+const MAX_VISIBLE = 6;
+const COMMENT_DURATION = 7000; // ms
+const COMMENT_FADE = 600; // fadeout duration
+const REACTION_EMOJIS = ['❤️','🔥','😂','👏','👍'];
+let usingRear = true;
+
+/* ---------- Elements ---------- */
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const startCamBtn = document.getElementById('startCam');
-const startRecBtn = document.getElementById('startRec');
-const stopRecBtn = document.getElementById('stopRec');
-const chatSpeedControl = document.getElementById('chatSpeed');
-const chatSpeedVal = document.getElementById('chatSpeedVal');
-const textSizeControl = document.getElementById('textSize');
-const fpsVal = document.getElementById('fpsVal');
-const sendCommentBtn = document.getElementById('sendComment');
-const customCommentInput = document.getElementById('customComment');
-const toggleOverlayBtn = document.getElementById('toggleOverlay');
+const commentsBox = document.getElementById('commentsBox');
+const viewersBadge = document.getElementById('viewers');
+const controlsPanel = document.getElementById('controlsPanel');
+const recordBtn = document.getElementById('recordBtn');
+const stopBtn = document.getElementById('stopBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const switchCam = document.getElementById('switchCam');
+const endBtn = document.getElementById('endBtn');
+const hint = document.getElementById('hint');
 
-let overlayVisible = true;
-let recording = false;
-let mediaRecorder;
+let mediaStream = null;
+let mediaRecorder = null;
 let recordedBlobs = [];
-let drawLoopId;
-let fps = 30;
-let chatSpeed = parseInt(chatSpeedControl.value);
-let textSize = parseInt(textSizeControl.value);
+let recording = false;
 
-// --- Mensajes de ejemplo en árabe (rtl) ---
-const arabicComments = [
-  'ما هذا البث المباشر الرائع! 👍',
+/* ---------- Arabic sample comments (RTL) ---------- */
+const sampleComments = [
+  'ما هذا البث المباشر الرائع!',
   'أين أنتم الآن؟',
   'موسيقى الخلفية جميلة 🎵',
   'تحياتنا من جزر الكناري 🌴',
@@ -94,315 +122,334 @@ const arabicComments = [
   'أحب الجمهور هنا 🔥'
 ];
 
-// Cola de comentarios visibles (cada uno tiene y position)
-let visibleComments = [];
-let reactions = [];
-const reactionEmojis = ['❤️','🔥','😂','👏','👍'];
+/* ---------- Helpers ---------- */
+function wait(ms){ return new Promise(res=>setTimeout(res,ms)); }
 
-// Añadir comentarios periódicamente
-let chatTimer = null;
-function startChatTimer(){
-  if(chatTimer) clearInterval(chatTimer);
-  chatTimer = setInterval(()=>{
-    addRandomArabicComment();
-  }, chatSpeed);
+function createCommentNode(text){
+  const el = document.createElement('div');
+  el.className = 'comment';
+  // optional meta line (time or username) — keep minimal to avoid likeness
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = 'Viewer';
+  meta.style.textAlign = 'left';
+  el.appendChild(meta);
+  const txt = document.createElement('div');
+  txt.style.direction = 'rtl';
+  txt.textContent = text;
+  el.appendChild(txt);
+  return el;
 }
 
-function addRandomArabicComment(){
-  const text = arabicComments[Math.floor(Math.random()*arabicComments.length)];
-  const item = { text, y: canvas.height - 40 - Math.random()*100, alpha:1 };
-  visibleComments.push(item);
+/* add comment to DOM stack (one below another) */
+function pushComment(text){
+  // limit number of child nodes
+  while(commentsBox.children.length >= MAX_VISIBLE){
+    const first = commentsBox.children[0];
+    fadeOutAndRemove(first);
+  }
+  const node = createCommentNode(text);
+  commentsBox.appendChild(node);
+  // trigger show animation
+  requestAnimationFrame(()=> node.classList.add('show'));
+  // spawn reaction sometimes
+  if(Math.random() < 0.5) spawnReaction();
+  // schedule removal
+  setTimeout(()=> fadeOutAndRemove(node), COMMENT_DURATION);
 }
 
-function addCustomComment(text){
-  if(!text) return;
-  const item = { text, y: canvas.height - 40, alpha:1 };
-  visibleComments.push(item);
+function fadeOutAndRemove(node){
+  node.style.transition = `opacity ${COMMENT_FADE}ms ease, transform ${COMMENT_FADE}ms ease`;
+  node.style.opacity = '0';
+  node.style.transform = 'translateY(-10px) scale(0.98)';
+  setTimeout(()=>{ if(node && node.remove) node.remove(); }, COMMENT_FADE + 50);
 }
 
+/* reactions: floating emoji from bottom-right area */
 function spawnReaction(){
-  const emoji = reactionEmojis[Math.floor(Math.random()*reactionEmojis.length)];
-  const x = canvas.width - 60 - Math.random()*120;
-  const rx = { emoji, x, y: canvas.height - 80, vy: -1 - Math.random()*1.5, alpha:1 };
-  reactions.push(rx);
+  const emoji = REACTION_EMOJIS[Math.floor(Math.random()*REACTION_EMOJIS.length)];
+  const el = document.createElement('div');
+  el.className = 'reaction';
+  el.textContent = emoji;
+  // start position
+  const startX = window.innerWidth * 0.75 + (Math.random()*40 - 20);
+  const startY = window.innerHeight - 160 + (Math.random()*30 - 10);
+  el.style.left = startX + 'px';
+  el.style.top = startY + 'px';
+  el.style.opacity = '1';
+  el.style.transform = 'translateY(0)';
+  document.body.appendChild(el);
+
+  // animate up + fade
+  const duration = 2200 + Math.random()*1000;
+  const dx = (Math.random()*-40) + (Math.random()*40);
+  const dy = - (120 + Math.random()*70);
+  const start = performance.now();
+  function step(now){
+    const t = Math.min(1, (now - start) / duration);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.style.transform = `translate(${dx * ease}px, ${dy * ease}px)`;
+    el.style.opacity = String(1 - ease);
+    if(t < 1) requestAnimationFrame(step);
+    else { el.remove(); }
+  }
+  requestAnimationFrame(step);
 }
 
-// --- Cámara ---
-async function startRearCamera(){
-  stopStreams();
+/* ---------- Camera & Canvas drawing ---------- */
+async function startCamera(){
+  stopCamera();
   const constraints = {
-    audio: false,
-    video: { facingMode: { ideal: 'environment' } }
+    audio: true,
+    video: {
+      facingMode: usingRear ? { exact: "environment" } : "user",
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    }
   };
   try{
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
-    await video.play();
-    setupCanvasSize();
-    startChatTimer();
-    startDrawLoop();
+    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
   }catch(e){
-    alert('No se pudo iniciar la cámara: '+e.message+'\nPrueba permitiendo acceso o usando otro navegador.');
-    console.error(e);
-  }
-}
-
-function stopStreams(){
-  if(video.srcObject){
-    const tracks = video.srcObject.getTracks();
-    tracks.forEach(t=>t.stop());
-    video.srcObject = null;
-  }
-}
-
-function setupCanvasSize(){
-  // Tamaño basado en vídeo (mantener relación)
-  const vw = video.videoWidth || 1280;
-  const vh = video.videoHeight || 720;
-  // limitar a pantalla
-  const maxW = Math.min(window.innerWidth-16, vw);
-  const aspect = vh>0? vw/vh : 16/9;
-  canvas.width = maxW;
-  canvas.height = Math.round(maxW / aspect);
-}
-
-// --- Dibujo ---
-function startDrawLoop(){
-  if(drawLoopId) cancelAnimationFrame(drawLoopId);
-  const interval = 1000 / fps;
-  let last = performance.now();
-  function loop(now){
-    const dt = now - last;
-    if(dt >= interval){
-      last = now - (dt % interval);
-      drawFrame();
+    // try without exact environment if not supported
+    try{
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:true });
+    }catch(err){
+      alert('Camera access is required. Please allow camera/mic permissions.');
+      console.error(err);
+      return;
     }
-    drawLoopId = requestAnimationFrame(loop);
   }
-  drawLoopId = requestAnimationFrame(loop);
+
+  // attach to video
+  video.srcObject = mediaStream;
+
+  // if using rear, do not mirror
+  video.style.transform = usingRear ? 'scaleX(1)' : 'scaleX(-1)';
+
+  await video.play();
+  resizeCanvas();
+  startDrawLoop();
 }
 
+/* stop camera */
+function stopCamera(){
+  if(mediaStream){
+    mediaStream.getTracks().forEach(t=>t.stop());
+    mediaStream = null;
+  }
+}
+
+/* canvas drawing loop: draw video to canvas so we can record overlay */
+let drawId = null;
+function resizeCanvas(){
+  const rect = video.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = Math.max(320, Math.floor(rect.width * ratio));
+  canvas.height = Math.max(240, Math.floor(rect.height * ratio));
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+}
+
+/* draw video frame + optional decorations to canvas (we keep DOM comments separate for crisp text) */
 function drawFrame(){
-  if(!video || video.readyState < 2){
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    return;
-  }
-  // Dibujar vídeo ajustado al canvas (cover)
-  const vw = video.videoWidth, vh = video.videoHeight;
-  const cw = canvas.width, ch = canvas.height;
-  const vr = vw/vh;
-  const cr = cw/ch;
-  let sx=0, sy=0, sw=vw, sh=vh;
-  if(vr > cr){
-    // vídeo más ancho -> recortar en X
-    const newW = Math.round(vh * cr);
-    sx = Math.round((vw - newW)/2);
-    sw = newW;
-  }else{
-    // vídeo más alto -> recortar en Y
-    const newH = Math.round(vw / cr);
-    sy = Math.round((vh - newH)/2);
-    sh = newH;
-  }
-  ctx.drawImage(video, sx, sy, sw, sh, 0,0,cw,ch);
+  if(!video || video.readyState < 2) return;
+  const cw = canvas.width;
+  const ch = canvas.height;
+  // draw video (cover)
+  ctx.clearRect(0,0,cw,ch);
+  try{
+    ctx.drawImage(video, 0, 0, cw, ch);
+  }catch(e){ /* sometimes video not ready */ }
 
-  if(overlayVisible){
-    drawOverlay();
-  }
+  // overlays drawn on canvas: small viewers badge top-left and brand placeholder top-center
+  // viewers badge
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  const pad = 14;
+  ctx.font = `${16 * (canvas.width/800)}px sans-serif`;
+  const text = viewersBadge.textContent;
+  const m = ctx.measureText(text);
+  const bw = Math.round(m.width + pad);
+  const bh = 36 * (canvas.width/800);
+  ctx.fillRect(12* (canvas.width/800), 12* (canvas.width/800), bw, bh);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(text, 20* (canvas.width/800), 12*(canvas.width/800) + (bh - 10) );
+  ctx.restore();
 }
 
-function drawOverlay(){
-  // sombreado inferior
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(0, canvas.height - 140, canvas.width, 140);
+/* loop */
+function startDrawLoop(){
+  if(drawId) cancelAnimationFrame(drawId);
+  function loop(){ drawFrame(); drawId = requestAnimationFrame(loop); }
+  drawId = requestAnimationFrame(loop);
+}
 
-  // Chat box (derecha) - RTL para árabe
-  const boxW = Math.min(320, canvas.width*0.45);
-  const boxX = canvas.width - boxW - 12;
-  const boxY = 12;
-  ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  roundRect(ctx, boxX, boxY, boxW, canvas.height - 160, 12, true, false);
+/* ---------- Recording ---------- */
+function startRecording(){
+  if(recording) return;
+  // capture stream from canvas so that overlay + video are recorded (DOM comments will not be captured automatically,
+  // so we also paint a simplified comments snapshot onto canvas periodically to include them in recording)
+  const stream = canvas.captureStream(30);
+  // also merge audio tracks (if any) from mediaStream
+  if(mediaStream){
+    const audioTracks = mediaStream.getAudioTracks();
+    if(audioTracks && audioTracks.length){
+      const audioCtx = new MediaStream();
+      audioTracks.forEach(t => stream.addTrack(t));
+    }
+  }
+  recordedBlobs = [];
+  try{
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+  }catch(e){
+    try{ mediaRecorder = new MediaRecorder(stream); }catch(err){ alert('Recording not supported in this browser.'); console.error(err); return; }
+  }
+  mediaRecorder.ondataavailable = e => { if(e.data && e.data.size) recordedBlobs.push(e.data); };
+  mediaRecorder.onstop = onRecordingStop;
+  mediaRecorder.start();
+  recording = true;
+  recordBtn.setAttribute('disabled','true');
+  stopBtn.removeAttribute('disabled');
+  downloadBtn.setAttribute('disabled','true');
+  // small visual pulse
+  recordBtn.classList.add('recording');
+}
 
-  // Dibujar comentarios (stacked bottom-up)
+function stopRecording(){
+  if(!recording || !mediaRecorder) return;
+  mediaRecorder.stop();
+  recording = false;
+  recordBtn.removeAttribute('disabled');
+  stopBtn.setAttribute('disabled','true');
+  downloadBtn.removeAttribute('disabled');
+  recordBtn.classList.remove('recording');
+}
+
+function onRecordingStop(){
+  const blob = new Blob(recordedBlobs, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  // enable download with blob url
+  downloadBtn.dataset.url = url;
+  downloadBtn.onclick = () => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'live_overlay.webm';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // revoke after a short while
+    setTimeout(()=> URL.revokeObjectURL(url), 2000);
+  };
+}
+
+/* ---------- Long press to show controls ---------- */
+let pressTimer = null;
+let pressPos = null;
+const pressDuration = 2000;
+const previewArea = document.getElementById('preview');
+previewArea.addEventListener('pointerdown',(e)=>{
+  pressPos = {x:e.clientX,y:e.clientY};
+  pressTimer = setTimeout(()=>{ controlsPanel.classList.add('visible'); }, pressDuration);
+});
+window.addEventListener('pointerup',()=>{
+  if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; }
+});
+/* hide panel if user taps outside */
+document.addEventListener('click',(e)=>{
+  if(!controlsPanel.contains(e.target) && !previewArea.contains(e.target)) return;
+  // if click inside preview but not long press, do nothing
+});
+/* also hide on end button */
+endBtn.addEventListener('click', ()=> { if(confirm('End stream preview?')) { window.location.reload(); } });
+
+/* ---------- UI hooks ---------- */
+recordBtn.addEventListener('click', ()=>{ startRecording(); });
+stopBtn.addEventListener('click', ()=>{ stopRecording(); });
+switchCam.addEventListener('click', async ()=>{ usingRear = !usingRear; await startCamera(); });
+
+/* ---------- Comments generator (simulate) ---------- */
+let commentInterval = null;
+function startComments(){
+  if(commentInterval) clearInterval(commentInterval);
+  commentInterval = setInterval(()=>{
+    const txt = sampleComments[Math.floor(Math.random()*sampleComments.length)];
+    pushComment(txt);
+  }, 1800 + Math.random()*1600);
+}
+
+/* ---------- Start everything ---------- */
+async function init(){
+  await startCamera();
+  // ensure layout sizes
+  await wait(250);
+  resizeCanvas();
+  startComments();
+  // hide hint after some seconds
+  setTimeout(()=>{ if(hint) hint.style.display = 'none'; }, 4500);
+}
+init();
+
+/* ---------- resize handling ---------- */
+window.addEventListener('resize', ()=>{ resizeCanvas(); });
+
+/* ---------- make sure comments are included in recording:
+   we periodically paint a snapshot of visible comments onto the canvas so they appear in the recorded video. */
+setInterval(()=> {
+  // draw a minimal comments snapshot in the same style as DOM on canvas (top-right)
+  if(!ctx) return;
   ctx.save();
-  ctx.translate(boxX+12, 0);
+  const cw = canvas.width, ch = canvas.height;
+  // draw semi-transparent box
+  const boxW = Math.min(cw * 0.36, 600);
+  const boxX = cw - boxW - 20;
+  const boxY = 70 * (cw/800);
+  ctx.fillStyle = 'rgba(0,0,0,0.0)'; // keep mostly transparent, comments text will be drawn
+  // draw each comment text
+  const nodes = Array.from(commentsBox.children);
   ctx.textAlign = 'right';
   ctx.direction = 'rtl';
-  ctx.font = `${textSize}px sans-serif`;
   ctx.fillStyle = '#fff';
-  const lineHeight = textSize + 8;
-
-  // actualizar y dibujar
-  for(let i=visibleComments.length-1;i>=0;i--){
-    const c = visibleComments[i];
-    c.y -= 0.4; // suben lentamente
-    c.alpha -= 0.002;
-    if(c.alpha <= 0 || c.y < 20) visibleComments.splice(i,1);
-    else{
-      ctx.globalAlpha = Math.max(0, Math.min(1, c.alpha));
-      // dibujar fondo y texto RTL
-      const text = c.text;
-      // medir y dibujar
-      const maxTextW = boxW - 24;
-      const lines = wrapTextArabic(ctx, text, maxTextW);
-      for(let li=0; li<lines.length; li++){
-        const y = c.y - (lines.length-1-li)*lineHeight;
-        // fondo
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
-        const tw = ctx.measureText(lines[li]).width;
-        ctx.fillRect(-tw-12, y - textSize, tw+16, textSize+8);
-        // texto
-        ctx.fillStyle = '#fff';
-        ctx.fillText(lines[li], 0, y);
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
-      }
+  const fontSize = Math.max(14, Math.round(18 * (cw/800)));
+  ctx.font = `${fontSize}px sans-serif`;
+  let y = boxY + fontSize;
+  for(let i = nodes.length - 1; i >= 0; i--){
+    const txt = nodes[i].innerText || nodes[i].textContent || '';
+    const lines = wrapTextCanvas(ctx, txt, boxW - 28);
+    for(let li = 0; li < lines.length; li++){
+      ctx.fillText(lines[li], cw - 28, y);
+      y += fontSize + 6;
     }
+    y += 6;
   }
   ctx.restore();
+}, 300);
 
-  // Reacciones flotantes
-  for(let i=reactions.length-1;i>=0;i--){
-    const r = reactions[i];
-    r.y += r.vy;
-    r.alpha -= 0.01;
-    ctx.globalAlpha = Math.max(0, r.alpha);
-    ctx.font = '28px sans-serif';
-    ctx.fillText(r.emoji, r.x, r.y);
-    if(r.alpha <= 0 || r.y < 20) reactions.splice(i,1);
-  }
-  ctx.globalAlpha = 1;
-
-  // contador simple arriba a la izquierda
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  roundRect(ctx, 12, 12, 140, 40, 10, true, false);
-  ctx.fillStyle = '#fff';
-  ctx.font = '16px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('Viendo: 1.2k', 22, 38);
-}
-
-function roundRect(ctx, x, y, w, h, r, fill, stroke){
-  if (typeof stroke === 'undefined') stroke = true;
-  if (typeof r === 'undefined') r = 5;
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.arcTo(x+w, y, x+w, y+h, r);
-  ctx.arcTo(x+w, y+h, x, y+h, r);
-  ctx.arcTo(x, y+h, x, y, r);
-  ctx.arcTo(x, y, x+w, y, r);
-  ctx.closePath();
-  if(fill) ctx.fill();
-  if(stroke) ctx.stroke();
-}
-
-// simple text wrap that preserves RTL looking visually ok
-function wrapTextArabic(ctx, text, maxWidth){
-  // split by spaces and try to pack
+/* helper to wrap text on canvas */
+function wrapTextCanvas(context, text, maxWidth){
   const words = text.split(' ');
-  let lines = [];
-  let cur = '';
+  let lines = [], cur = '';
   for(let w of words){
-    const test = cur? (w + ' ' + cur) : w; // keep rtl-ish ordering
-    const width = ctx.measureText(test).width;
+    const test = cur? (w + ' ' + cur) : w;
+    const width = context.measureText(test).width;
     if(width > maxWidth){
       if(cur) lines.push(cur);
       cur = w;
     }else cur = test;
   }
   if(cur) lines.push(cur);
-  return lines.slice(0,4); // max 4 lines
+  return lines.slice(0,4);
 }
 
-// --- Grabación ---
-function startRecording(){
-  if(recording) return;
-  const stream = canvas.captureStream(fps);
-  recordedBlobs = [];
-  const options = {mimeType: 'video/webm;codecs=vp9'};
-  try{
-    mediaRecorder = new MediaRecorder(stream, options);
-  }catch(e){
-    try{ mediaRecorder = new MediaRecorder(stream); }catch(err){
-      alert('Tu navegador no soporta MediaRecorder para canvas. Usa Chrome/Edge/Firefox en Android o Safari+ScreenRecord en iOS.');
-      console.error(err); return;
-    }
-  }
-  mediaRecorder.ondataavailable = (e)=>{ if(e.data && e.data.size>0) recordedBlobs.push(e.data); };
-  mediaRecorder.onstop = saveRecording;
-  mediaRecorder.start();
-  recording = true;
-  startRecBtn.disabled = true;
-  stopRecBtn.disabled = false;
-}
+/* allow user to tap centre to send a custom comment (for testing) */
+previewArea.addEventListener('dblclick', ()=>{ pushComment('هذا تعليق تجريبي من المستخدم'); });
 
-function stopRecording(){
-  if(!recording) return;
-  mediaRecorder.stop();
-  recording = false;
-  startRecBtn.disabled = false;
-  stopRecBtn.disabled = true;
-}
-
-function saveRecording(){
-  const blob = new Blob(recordedBlobs, {type: 'video/webm'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.style.display='none';
-  a.href = url;
-  a.download = 'stream_overlay.webm';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
-}
-
-// Eventos UI
-startCamBtn.addEventListener('click', ()=>{
-  startRearCamera();
+/* Accessibility: keyboard shortcuts (desktop testing) */
+window.addEventListener('keydown',(e)=>{
+  if(e.key === 'r') startRecording();
+  if(e.key === 's') stopRecording();
+  if(e.key === 'c') switchCam.click();
 });
-
-startRecBtn.addEventListener('click', ()=>{
-  startRecording();
-});
-stopRecBtn.addEventListener('click', ()=>{
-  stopRecording();
-});
-
-chatSpeedControl.addEventListener('input', ()=>{
-  chatSpeed = parseInt(chatSpeedControl.value);
-  chatSpeedVal.textContent = (chatSpeed/1000)+'s';
-  startChatTimer();
-});
-
-textSizeControl.addEventListener('input', ()=>{
-  textSize = parseInt(textSizeControl.value);
-});
-
-sendCommentBtn.addEventListener('click', ()=>{
-  const txt = customCommentInput.value.trim();
-  if(txt) addCustomComment(txt);
-  customCommentInput.value = '';
-  // spawn also a reaction to simulate engagement
-  spawnReaction();
-});
-
-toggleOverlayBtn.addEventListener('click', ()=>{
-  overlayVisible = !overlayVisible;
-  toggleOverlayBtn.textContent = overlayVisible? 'Ocultar overlay' : 'Mostrar overlay';
-});
-
-// Periodically spawn reactions to simulate activity
-setInterval(()=>{ if(Math.random() < 0.45) spawnReaction(); }, 1000);
-
-// Ajustar tamaño canvas al rotar/resize
-window.addEventListener('resize', ()=>{ if(video && video.videoWidth) setupCanvasSize(); });
-
-// Inicial: valores UI
-chatSpeedVal.textContent = (chatSpeed/1000)+'s';
-fpsVal.textContent = fps;
-
-// -- Helpers para limpiar al salir --
-window.addEventListener('pagehide', ()=>{ stopStreams(); if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); });
 
 </script>
 </body>
