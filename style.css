@@ -15,32 +15,25 @@ video {
     z-index: -1;
 }
 
-/* USER */
+/* USER (solo icono) */
 #user-box {
     position: absolute;
     top: calc(env(safe-area-inset-top) + 1px);
     left: 1px;
     display: flex;
     align-items: center;
-    gap: 6px;
     z-index: 9999;
 }
 
-#user-box img {
-    width: 40px;
-}
-
-#username {
-    color: white;
-    font-size: 20px;
-    font-weight: 600;
+#user-icon {
+    width: 50px; /* icono un poco más grande */
 }
 
 /* VIEWERS */
 .viewers-box {
     position: absolute;
-    top: calc(env(safe-area-inset-top) + 46px);
-    left: 4px;
+    top: calc(env(safe-area-inset-top) + 58px);
+    left: 5px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -48,29 +41,29 @@ video {
 }
 
 .eye-icon {
-    width: 32px;
+    width: 36px;
 }
 
 #viewers-count {
-    font-size: 17px;
+    font-size: 16px;
     color: white;
 }
 
 .viewers-label {
-    font-size: 15px;
+    font-size: 14px;
     color: white;
     opacity: 0.85;
 }
 
-/* LIVE STREAMING BADGE */
+/* LIVE STREAMING */
 #live-badge {
     position: absolute;
     top: calc(env(safe-area-inset-top) + 1px);
     right: 1px;
     background: #C1272D;
     color: white;
-    padding: 6px 18px;
-    border-radius: 18px;
+    padding: 8px 22px;
+    border-radius: 20px;
     font-size: 14px;
     font-weight: bold;
     display: none;
@@ -87,14 +80,14 @@ video {
 /* COMMENTS */
 #comments {
     position: absolute;
-    bottom: 105px;
+    bottom: 110px;
     left: 15px;
     color: white;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 500;
     display: flex;
     flex-direction: column-reverse;
-    gap: 5px;
+    gap: 4px;
     z-index: 9999;
 }
 
@@ -105,19 +98,19 @@ video {
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 0px;
+    gap: 0px; /* sin separación */
     z-index: 9999;
 }
 
 .control-btn {
-    width: 64px;
-    height: 64px;
+    width: 90px;   /* ICONOS MÁS GRANDES */
+    height: 90px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .control-btn img {
-    width: 64px;
-    height: 64px;
+    width: 90px;   /* ICONOS MÁS GRANDES */
+    height: 90px;
 }
