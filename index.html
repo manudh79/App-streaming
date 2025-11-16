@@ -1,153 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="ar">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KALAL_Y LIVE</title>
-
-<style>
-    body, html {
-        margin: 0;
-        padding: 0;
-        background: black;
-        overflow: hidden;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        color: white;
-    }
-
-    /* VIDEO */
-    #video {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100vw;
-        height: 100vh;
-        object-fit: cover;
-        z-index: 1;
-    }
-
-    /* TOP USER */
-    #topBox {
-        position: fixed;
-        top: 30px;
-        left: 20px;
-        z-index: 5;
-    }
-    #userRow {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    #kalalIcon {
-        height: 46px;
-    }
-
-    /* VIEWERS ROW */
-    #viewersRow {
-        margin-top: 10px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        opacity: 0.95;
-    }
-    #eyeIcon {
-        height: 26px;
-    }
-    #viewersText {
-        font-size: 20px;
-    }
-
-    /* LIVE BADGE */
-    #liveBadge {
-        position: fixed;
-        top: 30px;
-        right: 20px;
-        background: #C62828;
-        padding: 8px 22px;
-        border-radius: 16px;
-        font-size: 17px;
-        font-weight: bold;
-        display: none;
-        z-index: 5;
-    }
-
-    /* COMMENTS */
-    #commentsBox {
-        position: fixed;
-        bottom: 140px;
-        left: 20px;
-        width: 80%;
-        z-index: 5;
-        display: flex;
-        flex-direction: column-reverse;
-        gap: 12px;
-        font-size: 22px;
-        line-height: 24px;
-        font-weight: 500;
-        text-shadow: 0px 0px 4px black;
-    }
-
-    /* BOTTOM ICONS */
-    #bottomBar {
-        position: fixed;
-        bottom: 40px;
-        width: 100%;
-        z-index: 5;
-        display: flex;
-        justify-content: center;
-        gap: 60px;
-        align-items: center;
-    }
-    .btn {
-        background: none;
-        border: none;
-        padding: 0;
-    }
-    #recIcon { height: 70px; }
-    #camIcon { height: 70px; }
-    #heartIcon { height: 70px; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KALAL_Y Live</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<!-- VIDEO -->
-<video id="video" autoplay playsinline muted></video>
+  <!-- video element (hidden behind overlays) -->
+  <video id="video" autoplay playsinline muted></video>
 
-<!-- TOP USER -->
-<div id="topBox">
-    <div id="userRow">
-        <img id="kalalIcon" src="icons/KALAL.png">
+  <!-- TOP LEFT: user icon only (no text), viewers + eye -->
+  <div id="topLeft">
+    <div id="userIconWrap">
+      <img id="userIcon" src="icons/KALAL.png" alt="KALAL">
     </div>
 
     <div id="viewersRow">
-        <img id="eyeIcon" src="icons/EYE.png">
-        <div id="viewersText">50,604 viewers</div>
+      <img id="eyeIcon" src="icons/EYE.png" alt="eye">
+      <div id="viewersText">50,604 viewers</div>
     </div>
-</div>
+  </div>
 
-<!-- LIVE BADGE -->
-<div id="liveBadge">LIVE STREAMING</div>
+  <!-- LIVE badge top-right -->
+  <div id="liveBadge">LIVE STREAMING</div>
 
-<!-- COMMENTS -->
-<div id="commentsBox"></div>
+  <!-- COMMENTS: bottom-left, newest at bottom -->
+  <div id="commentsWrap">
+    <div id="commentsInner" aria-live="polite" ></div>
+  </div>
 
-<!-- BOTTOM ICONS -->
-<div id="bottomBar">
-    <button id="recBtn" class="btn">
-        <img id="recIcon" src="icons/REC.png">
+  <!-- BOTTOM CENTER ICONS -->
+  <div id="bottomBar">
+    <button id="recBtn" class="iconBtn" title="Record">
+      <img id="recIcon" src="icons/REC.png" alt="rec">
     </button>
 
-    <button id="camBtn" class="btn">
-        <img id="camIcon" src="icons/CAM.png">
+    <button id="camBtn" class="iconBtn" title="Switch camera">
+      <img id="camIcon" src="icons/CAM.png" alt="cam">
     </button>
 
-    <button id="likeBtn" class="btn">
-        <img id="heartIcon" src="icons/HEART.png">
+    <button id="likeBtn" class="iconBtn" title="Like">
+      <img id="heartIcon" src="icons/HEART.png" alt="heart">
     </button>
-</div>
+  </div>
 
-<!-- LOAD SCRIPT -->
-<script src="script.js"></script>
-
+  <script src="script.js"></script>
 </body>
 </html>
