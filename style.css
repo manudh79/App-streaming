@@ -18,62 +18,46 @@ body, html {
     z-index: 1;
 }
 
-/* TOP BAR (hora + iconos iPhone) */
-#status-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 55px;
-    padding: 10px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: white;
-    font-size: 26px;
-    z-index: 50;
-}
-
-/* ICONO USUARIO (KALAL) */
+/* ICONO USUARIO */
 #user-icon {
     position: fixed;
-    top: 40px;
-    left: 25px;
-    width: 130px;       /* TAMAÑO FINAL */
+    top: 20px;     /* MÁS ARRIBA */
+    left: 20px;
+    width: 115px;  /* TAMAÑO EXACTO DE MAQUETA */
     z-index: 50;
 }
 
-/* LIVE STREAMING (parpadeo) */
+/* LIVE STREAMING (derecha) */
 #live-badge {
     position: fixed;
-    top: 40px;
-    right: 25px;
-    width: 250px;       /* EXACTO A LA MAQUETA */
+    top: 20px;     /* MISMA ALTURA QUE ICONO USUARIO */
+    right: 20px;
+    width: 240px;  /* PROPORCIÓN EXACTA */
     display: none;
     z-index: 50;
-    animation: blink 1s infinite ease-in-out;
+    animation: blink 1.4s infinite ease-in-out; /* PARPADEO LENTO */
 }
 
 @keyframes blink {
     0% {opacity: 1;}
-    50% {opacity: 0.25;}
+    50% {opacity: 0.35;}
     100% {opacity: 1;}
 }
 
 /* VIEWERS */
 #viewers-box {
     position: fixed;
-    top: 115px;
-    left: 25px;
+    top: 105px;  /* SUBIDO */
+    left: 22px;
     display: flex;
     align-items: center;
     color: white;
-    font-size: 28px; /* AJUSTADO */
+    font-size: 22px; /* MUCHO MÁS PEQUEÑO */
     z-index: 50;
 }
 
 #eye-icon {
-    width: 55px; /* AJUSTADO */
+    width: 48px;  /* PERFECTO AHORA */
     margin-right: 10px;
 }
 
@@ -81,28 +65,29 @@ body, html {
 #comments {
     position: fixed;
     bottom: 150px;
-    left: 25px;
+    left: 22px;
     color: white;
-    font-size: 34px;
+    font-size: 28px; /* MÁS PEQUEÑO */
+    line-height: 32px;
     display: flex;
-    flex-direction: column-reverse; /* Empiezan desde abajo */
+    flex-direction: column-reverse;
     gap: 5px;
-    max-height: 350px;
+    max-height: 380px;
     z-index: 50;
-    text-shadow: 2px 2px 5px black;
+    text-shadow: 2px 2px 4px black;
 }
 
 /* ICONOS INFERIORES */
 #bottom-icons {
     position: fixed;
-    bottom: 60px;
+    bottom: 55px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 5px; /* SEPARACIÓN EXACTA */
+    gap: 2px;    /* SEPARACIÓN EXACTA */
     z-index: 50;
 }
 
 .bottom-btn {
-    width: 95px;     /* TAMAÑO FINAL */
+    width: 90px;  /* TAMAÑO EXACTO DE MAQUETA */
 }
