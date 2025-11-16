@@ -8,8 +8,14 @@ let mediaRecorder;
 let chunks = [];
 let recording = false;
 
-/* CAMERA FIX */
-navigator.mediaDevices.getUserMedia({ video: { facingMode:"user" }, audio: true })
+/* FIX AUDIO + MUTE VIDEO (evita ECO) */
+video.muted = true;
+video.setAttribute("muted", "true");
+
+navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "user" },
+    audio: true
+})
 .then(stream => {
     video.srcObject = stream;
 
@@ -27,11 +33,10 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode:"user" }, audio: true 
         a.click();
     };
 })
-.catch(err => {
-    alert("Permite acceso a la cámara en Safari.");
-});
+.catch(err => alert("Permite el acceso a la cámara en Safari."));
 
-/* RECORD BUTTON */
+
+/* REC BUTTON */
 recBtn.onclick = () => {
     if (!recording) {
         mediaRecorder.start();
@@ -44,20 +49,22 @@ recBtn.onclick = () => {
     }
 };
 
-/* VIEWERS COUNTER */
+
+/* VIEWERS */
 let viewers = 51000;
 setInterval(() => {
     viewers += Math.floor(Math.random() * 8);
     viewersCount.textContent = viewers.toLocaleString("en-US");
 }, 1500);
 
-/* ARABIC COMMENTS */
+
+/* COMMENTS */
 const comments = [
     "سامر: أنت بطل 👍",
     "علي: ممتاز",
     "كريم: عمل رائع",
-    "مروان: أحسنت 👍",
-    "هيثم: أحسنت 🔥"
+    "مروان: أحسنت",
+    "هيثم: رائع 🔥"
 ];
 
 setInterval(() => {
