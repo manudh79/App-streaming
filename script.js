@@ -8,8 +8,8 @@ let mediaRecorder;
 let chunks = [];
 let recording = false;
 
-/* CAMERA */
-navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+/* CAMERA FIX */
+navigator.mediaDevices.getUserMedia({ video: { facingMode:"user" }, audio: true })
 .then(stream => {
     video.srcObject = stream;
 
@@ -26,6 +26,9 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         a.download = "stream.mp4";
         a.click();
     };
+})
+.catch(err => {
+    alert("Permite acceso a la cámara en Safari.");
 });
 
 /* RECORD BUTTON */
@@ -41,7 +44,7 @@ recBtn.onclick = () => {
     }
 };
 
-/* VIEWERS NUMBER */
+/* VIEWERS COUNTER */
 let viewers = 51000;
 setInterval(() => {
     viewers += Math.floor(Math.random() * 8);
@@ -52,8 +55,8 @@ setInterval(() => {
 const comments = [
     "سامر: أنت بطل 👍",
     "علي: ممتاز",
-    "كريم: عمل رائع 👍",
-    "مروان: أحسنت",
+    "كريم: عمل رائع",
+    "مروان: أحسنت 👍",
     "هيثم: أحسنت 🔥"
 ];
 
