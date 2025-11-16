@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>KALAL_Y Live</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KALAL_Y LIVE</title>
 
 <style>
     body, html {
@@ -11,10 +11,11 @@
         padding: 0;
         background: black;
         overflow: hidden;
-        font-family: sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         color: white;
     }
 
+    /* VIDEO */
     #video {
         position: fixed;
         top: 0; left: 0;
@@ -24,103 +25,93 @@
         z-index: 1;
     }
 
-    /* ============================
-       TOP LEFT USER + VIEWERS
-       ============================ */
-    #userBox {
+    /* TOP USER AREA */
+    #topBox {
         position: fixed;
-        top: 60px;
+        top: 35px;     /* Ajustado EXACTO a tu maqueta */
         left: 20px;
         z-index: 5;
     }
-
     #userRow {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
     }
-
     #kalalIcon {
-        height: 32px;
+        height: 32px;     /* Más grande, como tu ejemplo */
     }
-
     #userName {
-        font-size: 26px;
+        font-size: 22px;  /* Más pequeño, como pediste */
         font-weight: 600;
     }
 
+    /* VIEWERS ROW */
     #viewersRow {
-        margin-top: 12px;
+        margin-top: 10px;
         display: flex;
         align-items: center;
         gap: 10px;
+        opacity: 0.95;
     }
-
     #eyeIcon {
-        height: 24px;
+        height: 22px;
     }
-
     #viewersText {
         font-size: 20px;
-        opacity: 0.9;
     }
 
-    /* ============================
-       LIVE STREAMING BADGE
-       ============================ */
+    /* LIVE BADGE */
     #liveBadge {
         position: fixed;
-        top: 60px;
+        top: 35px;
         right: 20px;
-        background: #c62828;
-        padding: 10px 22px;
-        border-radius: 18px;
-        font-size: 18px;
-        font-weight: 600;
+        background: #C62828;
+        padding: 8px 20px;
+        border-radius: 16px;
+        font-size: 17px;
+        font-weight: bold;
         display: none;
         z-index: 5;
     }
 
-    /* ============================
-       COMMENTS BOTTOM LEFT
-       ============================ */
+    /* COMMENTS */
     #commentsBox {
         position: fixed;
         bottom: 150px;
         left: 20px;
         width: 80%;
+        z-index: 5;
         display: flex;
         flex-direction: column-reverse;
-        gap: 10px;
-        z-index: 5;
-        font-size: 20px;
-        line-height: 22px;
+        gap: 12px;
+        font-size: 22px;
+        line-height: 24px;
+        font-weight: 500;
+        text-shadow: 0px 0px 4px black;
     }
 
-    /* ============================
-       BOTTOM ICONS (NO CIRCLES)
-       ============================ */
+    /* BOTTOM ICONS */
     #bottomBar {
         position: fixed;
         bottom: 40px;
         width: 100%;
+        z-index: 5;
         display: flex;
         justify-content: center;
+        gap: 80px;
         align-items: center;
-        gap: 70px;
-        z-index: 5;
     }
-
-    .iconBtn {
+    .btn {
         background: none;
         border: none;
         padding: 0;
     }
-
     .iconImg {
-        height: 52px;  /* Ajuste perfecto para tu diseño */
+        height: 48px;   /* Proporción real usuario */
     }
-
+    #recIcon { height: 46px; }
+    #camIcon { height: 50px; }
+    #heartIcon { height: 48px; }
 </style>
 </head>
 
@@ -129,58 +120,47 @@
 <!-- VIDEO -->
 <video id="video" autoplay playsinline muted></video>
 
-<!-- USER + VIEWERS -->
-<div id="userBox">
+<!-- TOP USER -->
+<div id="topBox">
     <div id="userRow">
         <img id="kalalIcon" src="icons/KALAL.png">
         <div id="userName">KALAL_Y</div>
     </div>
 
     <div id="viewersRow">
-        <img id="eyeIcon" src="icons/OJO VIEWERS.png">
+        <img id="eyeIcon" src="icons/EYE.png">
         <div id="viewersText">50,604 viewers</div>
     </div>
 </div>
 
-<!-- LIVE -->
+<!-- LIVE BADGE -->
 <div id="liveBadge">LIVE STREAMING</div>
 
 <!-- COMMENTS -->
 <div id="commentsBox"></div>
 
-<!-- BOTTOM BUTTONS -->
+<!-- BOTTOM ICONS -->
 <div id="bottomBar">
-    <button id="recBtn" class="iconBtn">
-        <img class="iconImg" src="icons/REC.png">
+    <button id="recBtn" class="btn">
+        <img id="recIcon" class="iconImg" src="icons/REC.png">
     </button>
 
-    <button id="camBtn" class="iconBtn">
-        <img class="iconImg" src="icons/CAMBIO CÁMARA.png">
+    <button id="camBtn" class="btn">
+        <img id="camIcon" class="iconImg" src="icons/CAM.png">
     </button>
 
-    <button id="likeBtn" class="iconBtn">
-        <img class="iconImg" src="icons/CORAZÓN.png">
+    <button id="likeBtn" class="btn">
+        <img id="heartIcon" class="iconImg" src="icons/HEART.png">
     </button>
 </div>
 
 <script>
 /* ==========================================================
-   CAMERA INITIALIZATION
+   CAMERA
    ========================================================== */
-let usingFront = false;
 let stream = null;
-let recorder = null;
-let chunks = [];
+let usingFront = false;
 
-/* DOM */
-const video = document.getElementById("video");
-const commentsBox = document.getElementById("commentsBox");
-const liveBadge = document.getElementById("liveBadge");
-const viewersText = document.getElementById("viewersText");
-
-/* ==========================================================
-   START CAMERA
-   ========================================================== */
 async function startCamera() {
     if (stream) stream.getTracks().forEach(t => t.stop());
 
@@ -200,45 +180,40 @@ async function startCamera() {
 }
 startCamera();
 
-/* CAMERA SWITCH */
 document.getElementById("camBtn").onclick = () => {
     usingFront = !usingFront;
     startCamera();
 };
 
 /* ==========================================================
-   VIEWERS INCREASING
+   VIEWERS AUTO INCREASE
    ========================================================== */
 let viewers = 50604;
 setInterval(() => {
     viewers = Math.floor(viewers * 1.015);
-    viewersText.textContent = viewers.toLocaleString() + " viewers";
+    document.getElementById("viewersText").textContent =
+        viewers.toLocaleString() + " viewers";
 }, 2000);
 
-
 /* ==========================================================
-   COMMENTS SYSTEM (BOTTOM LEFT)
+   COMMENTS
    ========================================================== */
+const names = ["فهد", "سيف", "كريم", "نور", "مروان", "آدم", "ليلى", "سارة", "علي", "ياسين"];
+const msgs = ["جيد جدًا", "أحسنت", "أداء ممتاز", "جميل جدًا", "استمر", "رائع"];
 
-const arabicNames = [
-    "فهد", "سيف", "كريم", "نور", "مروان", "آدم",
-    "ليلى", "سارة", "علي", "ياسين"
-];
+function randomComment() {
+    const name = names[Math.floor(Math.random() * names.length)];
+    const msg = msgs[Math.floor(Math.random() * msgs.length)];
 
-const arabicMsgs = [
-    "جيد جدًا 👍",
-    "🔥🔥 استمر",
-    "أداء ممتاز 👍",
-    "أنت رائع 🔥",
-    "استمر يا بطل 👍"
-];
+    // Solo algunos llevan emoji
+    const maybeEmoji = Math.random() < 0.45 ? (Math.random() < 0.5 ? " 👍" : " 🔥") : "";
+
+    return `${name}: ${msg}${maybeEmoji}`;
+}
 
 function addComment() {
-    const name = arabicNames[Math.floor(Math.random() * arabicNames.length)];
-    const msg = arabicMsgs[Math.floor(Math.random() * arabicMsgs.length)];
-
     const div = document.createElement("div");
-    div.textContent = `${name}: ${msg}`;
+    div.textContent = randomComment();
     commentsBox.appendChild(div);
 
     if (commentsBox.children.length > 5) {
@@ -246,35 +221,47 @@ function addComment() {
     }
 }
 
-setInterval(addComment, 1600);
-
+/* Más lento: cada ~3.5 s */
+setInterval(addComment, 3500);
 
 /* ==========================================================
-   RECORDING + LIVE BLINK
+   RECORD
    ========================================================== */
-
+let recorder = null;
+let chunks = [];
 let recording = false;
-let blinkState = true;
+let blink = true;
 
-document.getElementById("recBtn").onclick = () => {
+recBtn.onclick = () => {
     if (!recording) startRecording();
     else stopRecording();
 };
 
+function blinkLive() {
+    if (!recording) return;
+    liveBadge.style.display = blink ? "block" : "none";
+    blink = !blink;
+    setTimeout(blinkLive, 900);  // parpadeo lento
+}
+
 function startRecording() {
-    chunks = [];
+    recording = true;
+    liveBadge.style.display = "block";
+
     const canvas = new OffscreenCanvas(video.videoWidth, video.videoHeight);
     const ctx = canvas.getContext("2d");
 
-    function draw() {
+    function drawFrame() {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        requestAnimationFrame(draw);
+        requestAnimationFrame(drawFrame);
     }
-    draw();
+    drawFrame();
 
     const streamCanvas = canvas.captureStream(30);
 
     recorder = new MediaRecorder(streamCanvas, { mimeType: "video/webm" });
+    chunks = [];
+
     recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
     recorder.onstop = () => {
@@ -288,7 +275,6 @@ function startRecording() {
     };
 
     recorder.start();
-    recording = true;
     blinkLive();
 }
 
@@ -297,14 +283,7 @@ function stopRecording() {
     liveBadge.style.display = "none";
     recorder.stop();
 }
-
-function blinkLive() {
-    if (!recording) return;
-    liveBadge.style.display = blinkState ? "block" : "none";
-    blinkState = !blinkState;
-    setTimeout(blinkLive, 600);
-}
-
 </script>
+
 </body>
 </html>
