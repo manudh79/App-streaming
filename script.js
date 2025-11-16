@@ -1,112 +1,88 @@
-/* -------------------- CAMERA -------------------- */
+/* CAMERA */
 
 let currentCamera = "environment"; // TRASERA POR DEFECTO
+let currentStream = null;
 
 async function startCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: currentCamera },
-            audio: false        // SIN SONIDO → SIN ECO
-        });
-
-        const video = document.getElementById("video");
-        video.srcObject = stream;
-
-        return stream;
-
-    } catch (e) {
-        console.error("Error cámara:", e);
-        alert("No se pudo acceder a la cámara");
+    if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
     }
+
+    currentStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: currentCamera },
+        audio: false
+    });
+
+    document.getElementById("video").srcObject = currentStream;
 }
 
 startCamera();
 
-/* Cambio de cámara */
-document.getElementById("camBtn").addEventListener("click", async () => {
+/* CHANGE CAMERA */
+
+document.getElementById("camBtn").onclick = () => {
     currentCamera = currentCamera === "environment" ? "user" : "environment";
     startCamera();
-});
+};
 
+/* VIEWERS */
 
-/* -------------------- VIEWERS -------------------- */
-
-let viewers = 51063;
-
-function updateViewers() {
-    viewers += Math.floor(Math.random() * 5);
+let viewers = 50000;
+setInterval(() => {
+    viewers += Math.floor(Math.random() * 6);
     document.getElementById("viewersNumber").textContent =
         viewers.toLocaleString("en-US");
-}
+}, 1200);
 
-setInterval(updateViewers, 800);
-
-
-/* -------------------- COMMENTS -------------------- */
+/* COMMENTS */
 
 const commentsList = [
     "سامر: أنت بطل 👍",
     "علي: ممتاز",
     "كريم: عمل رائع",
     "مروان: أحسنت",
-    "هيثم: رائع 🔥",
-    "وليد: ممتاز 👍",
-    "رامي: استمر",
-    "خالد: أحسنت 👍"
+    "هيثم: رائع 🔥"
 ];
 
-function addComment() {
+setInterval(() => {
     const box = document.getElementById("comments");
-    const comment = document.createElement("div");
+    const c = document.createElement("div");
+    c.textContent = commentsList[Math.floor(Math.random() * commentsList.length)];
+    box.appendChild(c);
+    if (box.children.length > 6) box.children[0].remove();
+}, 1700);
 
-    let text = commentsList[Math.floor(Math.random() * commentsList.length)];
-
-    comment.textContent = text;
-
-    box.appendChild(comment);
-
-    if (box.children.length > 6) {
-        box.children[0].remove();
-    }
-}
-
-setInterval(addComment, 1800);
-
-
-/* -------------------- RECORDING -------------------- */
+/* RECORDING */
 
 let rec = false;
 let mediaRecorder;
-let recordedChunks = [];
+let chunks = [];
 
-document.getElementById("recBtn").addEventListener("click", async () => {
+document.getElementById("recBtn").onclick = () => {
+    const live = document.getElementById("liveContainer");
 
     if (!rec) {
-        const stream = document.getElementById("video").srcObject;
-
-        mediaRecorder = new MediaRecorder(stream, {
+        mediaRecorder = new MediaRecorder(currentStream, {
             mimeType: "video/webm; codecs=vp8"
         });
 
-        recordedChunks = [];
-
-        mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
-
+        chunks = [];
+        mediaRecorder.ondataavailable = e => chunks.push(e.data);
         mediaRecorder.onstop = downloadVideo;
 
         mediaRecorder.start();
         rec = true;
-        document.getElementById("liveIcon").style.opacity = "1";
+        live.style.display = "block";
 
     } else {
         mediaRecorder.stop();
         rec = false;
+        live.style.display = "none";
     }
-});
-
+};
 
 function downloadVideo() {
-    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const blob = new Blob(chunks, { type: "video/webm" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
