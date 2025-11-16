@@ -1,5 +1,6 @@
 const video = document.getElementById("camera");
 const recBtn = document.getElementById("rec-btn");
+const camBtn = document.getElementById("cam-btn");
 const liveBadge = document.getElementById("live-badge");
 const commentsBox = document.getElementById("comments");
 const viewersCount = document.getElementById("viewers-count");
@@ -7,36 +8,46 @@ const viewersCount = document.getElementById("viewers-count");
 let mediaRecorder;
 let chunks = [];
 let recording = false;
+let currentFacing = "user";  // "user" = frontal, "environment" = trasera
 
-/* FIX AUDIO + MUTE VIDEO (evita ECO) */
+/* ALWAYS MUTE VIDEO TO REMOVE ECHO */
 video.muted = true;
 video.setAttribute("muted", "true");
 
-navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "user" },
-    audio: true
-})
-.then(stream => {
-    video.srcObject = stream;
+function startCamera() {
+    navigator.mediaDevices.getUserMedia({
+        video: { facingMode: currentFacing },
+        audio: true
+    })
+    .then(stream => {
+        video.srcObject = stream;
 
-    mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => chunks.push(e.data);
 
-    mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "video/mp4" });
-        chunks = [];
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: "video/mp4" });
+            chunks = [];
 
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "stream.mp4";
-        a.click();
-    };
-})
-.catch(err => alert("Permite el acceso a la cámara en Safari."));
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "stream.mp4";
+            a.click();
+        };
+    })
+    .catch(err => alert("Permite la cámara en Safari."));
+}
 
+startCamera();
 
-/* REC BUTTON */
+/* SWITCH CAMERA */
+camBtn.onclick = () => {
+    currentFacing = currentFacing === "user" ? "environment" : "user";
+    startCamera();
+};
+
+/* RECORD */
 recBtn.onclick = () => {
     if (!recording) {
         mediaRecorder.start();
@@ -49,7 +60,6 @@ recBtn.onclick = () => {
     }
 };
 
-
 /* VIEWERS */
 let viewers = 51000;
 setInterval(() => {
@@ -57,13 +67,12 @@ setInterval(() => {
     viewersCount.textContent = viewers.toLocaleString("en-US");
 }, 1500);
 
-
-/* COMMENTS */
+/* ARABIC COMMENTS */
 const comments = [
     "سامر: أنت بطل 👍",
     "علي: ممتاز",
     "كريم: عمل رائع",
-    "مروان: أحسنت",
+    "مروان: أحسنت 👍",
     "هيثم: رائع 🔥"
 ];
 
