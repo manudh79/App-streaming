@@ -29,13 +29,18 @@ body, html {
 
 /* LIVE STREAMING – AHORA A LA ALTURA DEL USUARIO */
 #live-badge {
-    position: fixed;
-    top: 1px;           /* más arriba aún */
-    right: 1px;
-    width: 240px;
+    position: absolute;
+    top: 1px;              /* ⬆️ Súper pegado arriba */
+    right: 1px;            /* ⬅️ Súper pegado al borde derecho */
+    background: #C1272D;
+    color: white;
+    padding: 6px 18px;
+    border-radius: 18px;
+    font-size: 14px;
+    font-weight: bold;
     display: none;
-    z-index: 50;
-    animation: blink 1.4s infinite ease-in-out;
+    animation: blink 1.6s infinite; /* Parpadeo suave */
+    z-index: 9999;
 }
 
 @keyframes blink {
@@ -45,15 +50,25 @@ body, html {
 }
 
 /* VIEWERS */
-#viewers-box {
-    position: fixed;
-    top: 86px;
-    left: 4px;
+.viewers-box {
+    position: absolute;
+    top: 1px;               /* más arriba */
+    left: 88px;             /* justo debajo del icono de usuario */
     display: flex;
     align-items: center;
+    gap: 6px;
+}
+
+#viewers-count {
+    font-size: 18px;        /* antes 19, ahora -1px */
     color: white;
-    font-size: 20px;
-    z-index: 50;
+    font-weight: 300;
+}
+
+.viewers-label {
+    font-size: 16px;        /* antes 17, ahora -1px */
+    color: white;
+    opacity: 0.9;
 }
 
 #eye-icon {
