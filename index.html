@@ -1,207 +1,147 @@
-// FINAL LIVE STREAM OVERLAY (React)
-// ✔ Botón REC activa grabación
-// ✔ Exporta vídeo con overlay integrado (canvas)
-// ✔ MP4 alta calidad (vía conversión interna WebM → MP4 descargable)
-// ✔ Iconos en carpeta /icons
-// ✔ LIVE STREAMING parpadea durante grabación
-// ✔ Cambio cámara frontal / trasera
-// ✔ Comentarios sin fondo
-// ✔ Sin eco
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Streaming Overlay</title>
+  <style>
+    body, html { margin:0; padding:0; background:black; overflow:hidden; font-family:Arial, sans-serif; }
+    #video { position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; }
+    #overlay { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+    .top-left { position:absolute; top:25px; left:25px; color:white; }
+    .username { font-size:32px; font-weight:bold; margin-left:10px; }
+    .viewers { display:flex; align-items:center; margin-top:10px; font-size:22px; }
+    .comments { margin-top:25px; font-size:22px; }
 
-import React, { useState, useRef, useEffect } from 'react';
+    .top-right { position:absolute; top:25px; right:25px; }
+    .blink { animation: blink 0.7s infinite; }
+    @keyframes blink { 0%,50%{opacity:1;} 50%,100%{opacity:0.3;} }
 
-export default function LiveOverlay() {
-  const [recording, setRecording] = useState(false);
-  const [blink, setBlink] = useState(true);
-  const [viewers, setViewers] = useState(50604);
-  const [comments, setComments] = useState([]);
-  const [usingFront, setUsingFront] = useState(false);
+    .bottom-buttons { position:absolute; bottom:40px; width:100%; display:flex; justify-content:center; gap:60px; }
+    .btn { width:120px; height:120px; }
+  </style>
+</head>
+<body>
 
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const recorderRef = useRef(null);
-  const chunksRef = useRef([]);
-  const streamRef = useRef(null);
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
 
-  // --- Cámara ---
-  useEffect(() => {
-    startCamera();
-  }, []);
-
-  const startCamera = async () => {
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: usingFront ? "user" : "environment",
-        width: { ideal: 1920 },
-        height: { ideal: 1080 }
-      },
-      audio: false
-    });
-
-    streamRef.current = stream;
-    videoRef.current.srcObject = stream;
-  };
-
-  const switchCamera = () => {
-    setUsingFront(prev => !prev);
-    setTimeout(startCamera, 200);
-  };
-
-  // --- Viewers aumentando ---
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setViewers(v => Math.floor(v * 1.018));
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // --- Comentarios automáticos ---
-  useEffect(() => {
-    const names = ["khaled", "amina", "salah", "noor", "yara", "bilal", "farah", "ramzi", "ayman", "selim"];
-    const msgs = ["🔥", "😂😂", "increíble", "wow", "💯", "top", "vamos", "fino", "❤️"];
-    const interval = setInterval(() => {
-      const n = names[Math.floor(Math.random() * names.length)] + Math.floor(Math.random()*90);
-      const m = msgs[Math.floor(Math.random() * msgs.length)];
-      setComments(prev => [...prev.slice(-10), { user: n, text: m }]);
-    }, 2200);
-    return () => clearInterval(interval);
-  }, []);
-
-  // --- Parpadeo LIVE STREAMING ---
-  useEffect(() => {
-    if (!recording) return;
-    const interval = setInterval(() => setBlink(b => !b), 600);
-    return () => clearInterval(interval);
-  }, [recording]);
-
-  // --- Grabación INCLUYENDO overlays (canvas) ---
-  const startRecording = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-
-    chunksRef.current = [];
-
-    const drawFrame = () => {
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-
-      // --- USERNAME + ICON ---
-      ctx.drawImage(document.getElementById("icon-user"), 40, 40, 70, 70);
-      ctx.font = "34px sans-serif";
-      ctx.fillStyle = "white";
-      ctx.fillText("KALAL_Y", 125, 95);
-
-      // --- VIEWERS ---
-      ctx.drawImage(document.getElementById("icon-eye"), 50, 140, 45, 45);
-      ctx.font = "26px sans-serif";
-      ctx.fillText(viewers.toLocaleString() + " viewers", 110, 175);
-
-      // --- COMMENTS ---
-      let cy = 230;
-      comments.slice().reverse().forEach(c => {
-        ctx.font = "26px sans-serif";
-        ctx.fillText(c.user + ": " + c.text, 50, cy);
-        cy += 32;
-      });
-
-      // --- LIVE STREAMING ---
-      if (recording && blink) {
-        ctx.drawImage(document.getElementById("icon-live"), canvas.width - 330, 40, 290, 80);
-      }
-
-      requestAnimationFrame(drawFrame);
-    };
-
-    drawFrame();
-
-    const stream = canvas.captureStream(30);
-    recorderRef.current = new MediaRecorder(stream, {
-      mimeType: "video/webm;codecs=vp9"
-    });
-
-    recorderRef.current.ondataavailable = e => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
-
-    recorderRef.current.onstop = async () => {
-      const blob = new Blob(chunksRef.current, { type: "video/webm" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "stream_recording.mp4"; // se exporta como mp4
-      a.click();
-    };
-
-    recorderRef.current.start();
-    setRecording(true);
-  };
-
-  const stopRecording = () => {
-    recorderRef.current.stop();
-    setRecording(false);
-  };
-
-  return (
-    <div className="relative w-full h-full bg-black text-white select-none overflow-hidden">
-
-      {/* ICONOS OCULTOS PARA CANVAS */}
-      <img id="icon-user" src="/icons/KALAL.png" className="hidden" />
-      <img id="icon-eye" src="/icons/OJO_VIEWERS.png" className="hidden" />
-      <img id="icon-live" src="/icons/LIVE_STREAMING.png" className="hidden" />
-
-      {/* CANVAS DE EXPORTACIÓN */}
-      <canvas ref={canvasRef} width={1080} height={1920} className="hidden"></canvas>
-
-      {/* VIDEO */}
-      <video ref={videoRef} autoPlay playsInline muted className="absolute w-full h-full object-cover" />
-
-      {/* OVERLAY SUPERIOR IZQUIERDA (VISUAL) */}
-      <div className="absolute top-4 left-4 flex flex-col gap-3 z-20">
-        <div className="flex items-center gap-2">
-          <img src="/icons/KALAL.png" className="w-10" />
-          <span className="text-xl font-semibold">KALAL_Y</span>
-        </div>
-
-        <div className="flex items-center gap-2 opacity-90">
-          <img src="/icons/OJO_VIEWERS.png" className="w-8" />
-          <span className="text-sm">{viewers.toLocaleString()} viewers</span>
-        </div>
-
-        <div className="flex flex-col gap-1 text-sm opacity-95">
-          {comments.map((c, i) => (
-            <div key={i}><b>{c.user}</b>: {c.text}</div>
-          ))}
-        </div>
-      </div>
-
-      {/* LIVE STREAMING SUPERIOR DERECHA */}
-      {recording && (
-        <img
-          src="/icons/LIVE_STREAMING.png"
-          className={`absolute top-4 right-4 w-56 z-20 transition-opacity duration-300 ${blink ? 'opacity-100' : 'opacity-20'}`}
-        />
-      )}
-
-      {/* CONTROLES INFERIORES */}
-      <div className="absolute bottom-6 w-full flex items-center justify-center gap-20 z-20">
-
-        {/* REC */}
-        <button onClick={recording ? stopRecording : startRecording}>
-          <img src="/icons/REC.png" className="w-20" />
-        </button>
-
-        {/* CAMBIO CÁMARA */}
-        <button onClick={switchCamera}>
-          <img src="/icons/CAMBIO_CAMARA.png" className="w-20" />
-        </button>
-
-        {/* CORAZÓN */}
-        <button>
-          <img src="/icons/CORAZON.png" className="w-20" />
-        </button>
-
-      </div>
+  <!-- TOP LEFT -->
+  <div class="top-left">
+    <div style="display:flex; align-items:center;">
+      <img src="icons/KALAL.png" id="icon-user" style="height:70px;" />
+      <span class="username">KALAL_Y</span>
     </div>
-  );
+
+    <div class="viewers">
+      <img src="icons/OJO_VIEWERS.png" id="icon-eye" style="height:45px; margin-right:10px;" />
+      <span id="viewerCount">50,604 viewers</span>
+    </div>
+
+    <div class="comments" id="commentsBox"></div>
+  </div>
+
+  <!-- TOP RIGHT LIVE -->
+  <div class="top-right">
+    <img src="icons/LIVE STREAMING.png" id="liveIndicator" style="height:80px; display:none;" />
+  </div>
+
+  <!-- BOTTOM BUTTONS -->
+  <div class="bottom-buttons">
+    <img src="icons/REC.png" id="btnRec" class="btn" style="cursor:pointer;" />
+    <img src="icons/CAMBIO CÁMARA.png" id="btnSwitch" class="btn" style="cursor:pointer;" />
+    <img src="icons/CORAZÓN.png" id="btnLike" class="btn" />
+  </div>
+
+<script>
+let video = document.getElementById('video');
+let canvas = document.getElementById('overlay');
+let ctx = canvas.getContext('2d');
+let recording = false;
+let front = false;
+let recorder;
+let chunks = [];
+let viewerCount = 50604;
+let comments = [];
+
+async function startCamera(){
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode: front ? 'user' : 'environment' }, audio:false
+  });
+  video.srcObject = stream;
 }
+startCamera();
+
+function updateCanvas(){
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+  let userIcon = document.getElementById('icon-user');
+  ctx.drawImage(userIcon,40,40,70,70);
+  ctx.fillStyle='white'; ctx.font='40px Arial'; ctx.fillText('KALAL_Y',130,95);
+
+  let eye = document.getElementById('icon-eye');
+  ctx.drawImage(eye,40,140,45,45);
+  ctx.font='30px Arial';
+  ctx.fillText(viewerCount.toLocaleString()+' viewers',100,175);
+
+  let cy = 230; ctx.font='28px Arial';
+  comments.slice(-5).forEach(c=>{ ctx.fillText(c,40,cy); cy+=40; });
+
+  if(recording){
+    let liveImg = document.getElementById('liveIndicator');
+    ctx.drawImage(liveImg, canvas.width-350, 40, 300, 80);
+  }
+
+  requestAnimationFrame(updateCanvas);
+}
+updateCanvas();
+
+setInterval(()=>{ viewerCount=Math.floor(viewerCount*1.015); document.getElementById('viewerCount').innerText=viewerCount.toLocaleString()+' viewers'; },2000);
+
+setInterval(()=>{
+  let names=["ahmed","khaled","youssef","salim","noor","layla","fatima"];
+  let msgs=["🔥","💯","vamos","top","wow","increíble","💥"];
+  comments.push(names[Math.floor(Math.random()*names.length)]+": "+msgs[Math.floor(Math.random()*msgs.length)]);
+  document.getElementById('commentsBox').innerText=comments.slice(-5).join('
+');
+},2200);
+
+document.getElementById('btnSwitch').onclick=()=>{ front=!front; startCamera(); };
+
+document.getElementById('btnRec').onclick=()=>{
+  if(!recording){ startRecording(); }
+  else{ stopRecording(); }
+};
+
+function startRecording(){
+  chunks=[];
+  document.getElementById('liveIndicator').style.display='block';
+  document.getElementById('liveIndicator').classList.add('blink');
+
+  let stream = canvas.captureStream(30);
+  recorder = new MediaRecorder(stream,{ mimeType:'video/webm;codecs=vp9' });
+
+  recorder.ondataavailable=e=>{ if(e.data.size>0)chunks.push(e.data); };
+
+  recorder.onstop=()=>{
+    let blob=new Blob(chunks,{type:'video/webm'});
+    let url=URL.createObjectURL(blob);
+    let a=document.createElement('a');
+    a.href=url; a.download='stream.mp4'; a.click();
+  };
+
+  recorder.start(); recording=true;
+}
+
+function stopRecording(){
+  recording=false;
+  document.getElementById('liveIndicator').style.display='none';
+  recorder.stop();
+}
+</script>
+
+</body>
+</html>
