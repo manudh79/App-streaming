@@ -13,57 +13,57 @@ video {
     left: 0;
 }
 
-/* ---------- TOP LEFT ---------- */
+/* ---------- USER ICON ---------- */
 
-#top-left {
+#user-box {
     position: absolute;
-    top: 4px;                 /* MÁS ARRIBA */
+    top: 4px;
     left: 4px;
-    display: flex;
-    align-items: center;
-    gap: 6px;                 /* MENOR ESPACIO */
 }
 
 #userIcon {
-    width: 85px;              /* AJUSTE FINAL */
+    width: 210px;   /* TAMAÑO GRANDE RESTAURADO */
     height: auto;
 }
 
-#stats {
-    display: flex;
-    flex-direction: column;
-    margin-top: -2px;         /* BAJA 2PX EL TEXTO */
-}
+/* ---------- VIEWERS ---------- */
 
-#viewersLine {
+#viewers-box {
+    position: absolute;
+    top: 82px;       /* JUSTO DEBAJO DEL USUARIO */
+    left: 8px;
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
 #eyeIcon {
-    width: 42px;
-    height: auto;
+    width: 45px;
 }
 
-#viewersText {
+#viewersNumber {
     color: white;
-    font-size: 23px;          /* 1 PX MÁS PEQUEÑO */
-    font-weight: 400;
+    font-size: 23px;      /* tamaño correcto */
+    font-weight: 300;
 }
 
+#viewersLabel {
+    color: white;
+    font-size: 22px;
+    opacity: 0.9;
+}
 
-/* ---------- LIVE BUTTON ---------- */
+/* ---------- LIVE STREAMING ---------- */
 
 #liveContainer {
     position: absolute;
-    top: 5px;               /* MÁS SEPARADO DEL BORDE */
+    top: 6px;
     right: 6px;
+    display: none;      /* OCULTO POR DEFECTO */
 }
 
 #liveIcon {
-    width: 255px;           /* UN POCO MÁS PEQUEÑO */
-    height: auto;
+    width: 230px;       /* más pequeño */
     animation: blink 1.4s infinite;
 }
 
@@ -73,16 +73,14 @@ video {
     100% { opacity: 1; }
 }
 
-
 /* ---------- COMMENTS ---------- */
 
 #comments {
     position: absolute;
     bottom: 160px;
-    left: 10px;
+    left: 12px;
     color: white;
-    font-size: 31px;      /* UN PELÍN MÁS GRANDE */
-    font-weight: 300;
+    font-size: 31px;  /* tamaño restaurado */
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -96,10 +94,10 @@ video {
     width: 100%;
     display: flex;
     justify-content: center;
-    gap: 0px;              /* SIN ESPACIO ENTRE ÍCONOS */
+    gap: 0px;
 }
 
 .btnIcon {
-    width: 120px;          /* SUBIDOS A 120px */
+    width: 120px;    /* se mantiene */
     height: auto;
 }
