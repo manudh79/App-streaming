@@ -2,35 +2,49 @@
 <html lang="ar">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>KALAL_Y Live</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="./style.css" />
 </head>
 
 <body>
 
+  <!-- VIDEO -->
   <video id="video" autoplay playsinline muted></video>
 
+  <!-- TOP LEFT -->
   <div id="topLeft">
-    <img id="userIcon" src="icons/KALAL.png">
+    <img id="userIcon" src="./icons/KALAL.png" />
+
     <div id="viewersRow">
-      <img id="eyeIcon" src="icons/EYE.png">
+      <img id="eyeIcon" src="./icons/EYE.png" />
       <div id="viewersText">50,604 viewers</div>
     </div>
   </div>
 
+  <!-- LIVE BADGE (se oculta hasta pulsar REC) -->
   <div id="liveBadge">LIVE STREAMING</div>
 
+  <!-- COMMENTS -->
   <div id="commentsWrap">
     <div id="commentsInner"></div>
   </div>
 
+  <!-- BOTTOM ICON BAR -->
   <div id="bottomBar">
-    <button id="recBtn" class="iconBtn"><img src="icons/REC.png" id="recIcon"></button>
-    <button id="camBtn" class="iconBtn"><img src="icons/CAM.png" id="camIcon"></button>
-    <button id="likeBtn" class="iconBtn"><img src="icons/HEART.png" id="heartIcon"></button>
+    <button id="recBtn" class="iconBtn">
+      <img id="recIcon" src="./icons/REC.png" />
+    </button>
+
+    <button id="camBtn" class="iconBtn">
+      <img id="camIcon" src="./icons/CAM.png" />
+    </button>
+
+    <button id="likeBtn" class="iconBtn">
+      <img id="heartIcon" src="./icons/HEART.png" />
+    </button>
   </div>
 
-  <script src="script.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
