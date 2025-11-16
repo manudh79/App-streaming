@@ -1,72 +1,108 @@
-:root{
-  --red:#c62b2b;
-  --white:#ffffff;
+/* GENERAL */
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: black;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-body,html{
-  margin:0; height:100%; background:#000; overflow:hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+/* VIDEO */
+#video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: 1;
 }
 
-/* video */
-#video{
-  position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; z-index:1;
+/* TOP BAR (hora + iconos iPhone) */
+#status-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 55px;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    font-size: 26px;
+    z-index: 50;
 }
 
-/* top left */
-#topLeft{
-  position:fixed; top:22px; left:20px; z-index:10;
+/* ICONO USUARIO (KALAL) */
+#user-icon {
+    position: fixed;
+    top: 40px;
+    left: 25px;
+    width: 130px;       /* TAMAÑO FINAL */
+    z-index: 50;
 }
 
-#userIcon{
-  width:100px; height:100px; object-fit:contain;
-  margin-bottom:12px;
+/* LIVE STREAMING (parpadeo) */
+#live-badge {
+    position: fixed;
+    top: 40px;
+    right: 25px;
+    width: 250px;       /* EXACTO A LA MAQUETA */
+    display: none;
+    z-index: 50;
+    animation: blink 1s infinite ease-in-out;
 }
 
-#viewersRow{
-  display:flex; align-items:center; gap:5px;
+@keyframes blink {
+    0% {opacity: 1;}
+    50% {opacity: 0.25;}
+    100% {opacity: 1;}
 }
 
-#eyeIcon{
-  width:32px; height:32px;
+/* VIEWERS */
+#viewers-box {
+    position: fixed;
+    top: 115px;
+    left: 25px;
+    display: flex;
+    align-items: center;
+    color: white;
+    font-size: 28px; /* AJUSTADO */
+    z-index: 50;
 }
 
-#viewersText{
-  font-size:26px; font-weight:500;
+#eye-icon {
+    width: 55px; /* AJUSTADO */
+    margin-right: 10px;
 }
 
-/* LIVE badge */
-#liveBadge{
-  position:fixed; top:28px; right:20px; z-index:12;
-  background:var(--red); padding:10px 30px;
-  border-radius:24px; font-size:20px;
-  font-weight:700; color:var(--white);
-  display:none;
+/* COMENTARIOS */
+#comments {
+    position: fixed;
+    bottom: 150px;
+    left: 25px;
+    color: white;
+    font-size: 34px;
+    display: flex;
+    flex-direction: column-reverse; /* Empiezan desde abajo */
+    gap: 5px;
+    max-height: 350px;
+    z-index: 50;
+    text-shadow: 2px 2px 5px black;
 }
 
-/* comments */
-#commentsWrap{
-  position:fixed; bottom:170px; left:20px; z-index:12;
-  width:75%;
+/* ICONOS INFERIORES */
+#bottom-icons {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px; /* SEPARACIÓN EXACTA */
+    z-index: 50;
 }
 
-#commentsInner{
-  display:flex; flex-direction:column; gap:10px;
-  font-size:28px; font-weight:600;
-  text-shadow:0 0 10px black;
-}
-
-/* bottom bar */
-#bottomBar{
-  position:fixed; bottom:45px; left:0; right:0;
-  display:flex; justify-content:center;
-  gap:85px; z-index:12;
-}
-
-.iconBtn{
-  background:none; border:none; padding:0;
-}
-
-#recIcon,#camIcon,#heartIcon{
-  width:95px; height:95px; object-fit:contain;
+.bottom-btn {
+    width: 95px;     /* TAMAÑO FINAL */
 }
