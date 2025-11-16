@@ -1,37 +1,72 @@
-/* GENERAL */
-body, html {
+body {
     margin: 0;
-    padding: 0;
     overflow: hidden;
     background: black;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: sans-serif;
 }
 
-/* VIDEO */
-#video {
+video {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    z-index: 1;
+    z-index: -1;
 }
 
-/* ICONO USUARIO */
-#user-icon {
-    position: fixed;
-    top: 1px;           /* pegado arriba */
-    left: 1px;          /* pegado izquierda */
-    width: 115px;
-    z-index: 50;
+/* USER */
+#user-box {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 1px);
+    left: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 9999;
 }
 
-/* LIVE STREAMING – AHORA A LA ALTURA DEL USUARIO */
+#user-box img {
+    width: 40px;
+}
+
+#username {
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* VIEWERS */
+.viewers-box {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 46px);
+    left: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 9999;
+}
+
+.eye-icon {
+    width: 32px;
+}
+
+#viewers-count {
+    font-size: 17px;
+    color: white;
+}
+
+.viewers-label {
+    font-size: 15px;
+    color: white;
+    opacity: 0.85;
+}
+
+/* LIVE STREAMING BADGE */
 #live-badge {
     position: absolute;
-    top: 1px;              /* ⬆️ Súper pegado arriba */
-    right: 1px;            /* ⬅️ Súper pegado al borde derecho */
+    top: calc(env(safe-area-inset-top) + 1px);
+    right: 1px;
     background: #C1272D;
     color: white;
     padding: 6px 18px;
@@ -39,70 +74,50 @@ body, html {
     font-size: 14px;
     font-weight: bold;
     display: none;
-    animation: blink 1.6s infinite; /* Parpadeo suave */
+    animation: blink 1.3s infinite;
     z-index: 9999;
 }
 
 @keyframes blink {
-    0% {opacity: 1;}
-    50% {opacity: 0.35;}
-    100% {opacity: 1;}
+    0% { opacity: 1; }
+    50% { opacity: 0.45; }
+    100% { opacity: 1; }
 }
 
-/* VIEWERS */
-.viewers-box {
-    position: absolute;
-    top: 1px;               /* más arriba */
-    left: 88px;             /* justo debajo del icono de usuario */
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-#viewers-count {
-    font-size: 18px;        /* antes 19, ahora -1px */
-    color: white;
-    font-weight: 300;
-}
-
-.viewers-label {
-    font-size: 16px;        /* antes 17, ahora -1px */
-    color: white;
-    opacity: 0.9;
-}
-
-#eye-icon {
-    width: 48px;
-    margin-right: 6px;
-}
-
-/* COMENTARIOS – ahora más pequeños y más abajo */
+/* COMMENTS */
 #comments {
-    position: fixed;
-    bottom: 115px;         /* MÁS CERCA DE LOS ICONOS */
-    left: 12px;
+    position: absolute;
+    bottom: 105px;
+    left: 15px;
     color: white;
-    font-size: 22px;        /* MÁS PEQUEÑOS */
-    line-height: 26px;
+    font-size: 22px;
+    font-weight: 500;
     display: flex;
     flex-direction: column-reverse;
-    gap: 4px;
-    max-height: 360px;
-    z-index: 50;
-    text-shadow: 2px 2px 4px black;
+    gap: 5px;
+    z-index: 9999;
 }
 
-/* ICONOS INFERIORES */
-#bottom-icons {
-    position: fixed;
-    bottom: 1px;                /* al borde inferior */
+/* CONTROLS */
+.controls {
+    position: absolute;
+    bottom: calc(env(safe-area-inset-bottom) + 1px);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 0px;                   /* sin separación */
-    z-index: 50;
+    gap: 0px;
+    z-index: 9999;
 }
 
-.bottom-btn {
-    width: 90px;
+.control-btn {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-btn img {
+    width: 64px;
+    height: 64px;
 }
