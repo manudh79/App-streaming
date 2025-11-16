@@ -1,0 +1,51 @@
+/* Base */
+:root{
+  --red:#C62828;
+  --white:#fff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#000;color:var(--white);font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial}
+
+/* Video covers whole screen */
+#video{
+  position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; z-index:1;
+}
+
+/* TOP LEFT (user icon only) */
+#topLeft{
+  position:fixed; top:28px; left:18px; z-index:6; display:flex; flex-direction:column; gap:10px; align-items:flex-start;
+}
+
+/* user icon (bigger, occupies roughly same area as a username would) */
+#userIconWrap{ display:flex; align-items:center; gap:8px; }
+#userIcon{ width:56px; height:56px; object-fit:contain; border-radius:6px; }
+
+/* viewers row: eye icon first (to the left visually), then text to its right */
+#viewersRow{ display:flex; align-items:center; gap:12px; margin-top:4px; }
+#eyeIcon{ width:28px; height:28px; }
+#viewersText{ font-size:20px; opacity:0.95; }
+
+/* LIVE badge top-right */
+#liveBadge{
+  position:fixed; top:28px; right:18px; z-index:6;
+  background:var(--red); color:var(--white); padding:10px 22px; border-radius:20px; font-weight:700; font-size:16px; display:none; box-shadow:0 6px 20px rgba(0,0,0,0.45);
+}
+
+/* COMMENTS bottom-left (new comments appear at bottom and older move up) */
+#commentsWrap{ position:fixed; left:18px; bottom:160px; width:70%; z-index:6; pointer-events:none; }
+#commentsInner{ display:flex; flex-direction:column-reverse; gap:12px; font-size:22px; line-height:1.05; text-shadow:0 2px 8px rgba(0,0,0,0.6); }
+
+/* BOTTOM BAR: centered icons, no circles, sizes per your choice (option 2 -> 85px) */
+#bottomBar{
+  position:fixed; left:0; right:0; bottom:40px; z-index:6; display:flex; justify-content:center; gap:80px; align-items:center;
+}
+.iconBtn{ background:none; border:none; padding:0; display:flex; align-items:center; justify-content:center; }
+#recIcon,#camIcon,#heartIcon{ width:85px; height:85px; object-fit:contain; }
+
+/* Small screens adjustments */
+@media (max-width:420px){
+  #userIcon{ width:48px; height:48px; }
+  #viewersText{ font-size:18px }
+  #commentsInner{ font-size:20px }
+  #recIcon,#camIcon,#heartIcon{ width:72px;height:72px }
+}
