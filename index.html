@@ -1,36 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KALAL_Y Stream</title>
-<link rel="stylesheet" href="style.css?v=601">
-</head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>App Streaming</title>
 
+    <link rel="stylesheet" href="style.css" />
+</head>
 <body>
 
-    <video id="camera" autoplay playsinline muted></video>
+    <!-- VIDEO -->
+    <video id="video" autoplay playsinline></video>
 
-    <div id="user-box">
-        <img src="icons/KALAL.png" id="user-icon">
+    <!-- TOP BAR -->
+    <div id="top-left">
+        <img id="userIcon" src="icons/KALAL.png" />
+        <div id="stats">
+            <div id="viewersLine">
+                <img id="eyeIcon" src="icons/EYE.png">
+                <span id="viewersText"><span id="viewersNumber">50,000</span> viewers</span>
+            </div>
+        </div>
     </div>
 
-    <div class="viewers-box">
-        <img src="icons/EYE.png" class="eye-icon">
-        <div id="viewers-count">50,000</div>
-        <div class="viewers-label">viewers</div>
+    <div id="liveContainer">
+        <img src="icons/LIVE.png" id="liveIcon">
     </div>
 
-    <div id="live-badge">LIVE STREAMING</div>
-
+    <!-- COMMENTS -->
     <div id="comments"></div>
 
-    <div class="controls">
-        <div class="control-btn" id="rec-btn"><img src="icons/REC.png"></div>
-        <div class="control-btn" id="cam-btn"><img src="icons/CAM.png"></div>
-        <div class="control-btn" id="heart-btn"><img src="icons/HEART.png"></div>
+    <!-- BOTTOM ICONS -->
+    <div id="bottomIcons">
+        <img class="btnIcon" id="recBtn" src="icons/REC.png">
+        <img class="btnIcon" id="camBtn" src="icons/CAM.png">
+        <img class="btnIcon" id="heartBtn" src="icons/HEART.png">
     </div>
 
-<script src="script.js?v=601"></script>
+    <script src="script.js"></script>
 </body>
 </html>
