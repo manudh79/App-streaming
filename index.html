@@ -1,40 +1,42 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Live Stream</title>
-
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KALAL_Y Stream</title>
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <!-- VIDEO -->
-    <video id="video" autoplay playsinline muted></video>
+    <video id="camera" autoplay playsinline></video>
 
-    <!-- ICONO USUARIO (arriba izquierda) -->
-    <img id="user-icon" src="icons/KALAL.png">
-
-    <!-- BADGE LIVE STREAMING (arriba derecha) -->
-    <img id="live-badge" src="icons/LIVE.png">
-
-    <!-- VIEWERS (arriba izquierda debajo del usuario) -->
-    <div id="viewers-box">
-        <img id="eye-icon" src="icons/EYE.png">
-        <span id="viewers-count">50,000 viewers</span>
+    <!-- USER -->
+    <div id="user-box">
+        <img src="icons/KALAL.png">
+        <div id="username">KALAL_Y</div>
     </div>
 
-    <!-- COMENTARIOS (esquina inferior izquierda) -->
+    <!-- VIEWERS -->
+    <div class="viewers-box">
+        <img src="icons/EYE.png" class="eye-icon">
+        <div id="viewers-count">50,000</div>
+        <div class="viewers-label">viewers</div>
+    </div>
+
+    <!-- LIVE STREAMING BADGE -->
+    <div id="live-badge">LIVE STREAMING</div>
+
+    <!-- COMMENTS -->
     <div id="comments"></div>
 
-    <!-- ICONOS INFERIORES -->
-    <div id="bottom-icons">
-        <img id="rec-btn" class="bottom-btn" src="icons/REC.png">
-        <img id="cam-btn" class="bottom-btn" src="icons/CAM.png">
-        <img id="heart-btn" class="bottom-btn" src="icons/HEART.png">
+    <!-- CONTROLS BOTTOM -->
+    <div class="controls">
+        <div class="control-btn" id="rec-btn"><img src="icons/REC.png"></div>
+        <div class="control-btn" id="cam-btn"><img src="icons/CAM.png"></div>
+        <div class="control-btn" id="heart-btn"><img src="icons/HEART.png"></div>
     </div>
 
+<script src="script.js"></script>
 </body>
 </html>
