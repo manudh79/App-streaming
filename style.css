@@ -18,24 +18,24 @@ body, html {
     z-index: 1;
 }
 
-/* ICONO USUARIO */
+/* ICONO USUARIO — pegado a la esquina izquierda */
 #user-icon {
     position: fixed;
-    top: 20px;     /* MÁS ARRIBA */
-    left: 20px;
-    width: 115px;  /* TAMAÑO EXACTO DE MAQUETA */
+    top: 1px;       /* casi al borde superior */
+    left: 1px;      /* casi al borde izquierdo */
+    width: 115px;
     z-index: 50;
 }
 
-/* LIVE STREAMING (derecha) */
+/* LIVE STREAMING — casi pegado arriba y derecha */
 #live-badge {
     position: fixed;
-    top: 20px;     /* MISMA ALTURA QUE ICONO USUARIO */
-    right: 20px;
-    width: 240px;  /* PROPORCIÓN EXACTA */
+    top: 1px;       /* 1px margen superior */
+    right: 1px;     /* 1px margen derecho */
+    width: 240px;
     display: none;
     z-index: 50;
-    animation: blink 1.4s infinite ease-in-out; /* PARPADEO LENTO */
+    animation: blink 1.4s infinite ease-in-out;
 }
 
 @keyframes blink {
@@ -47,27 +47,27 @@ body, html {
 /* VIEWERS */
 #viewers-box {
     position: fixed;
-    top: 105px;  /* SUBIDO */
-    left: 22px;
+    top: 86px;       /* MÁS PEGADO AL USUARIO */
+    left: 4px;       /* pegado al borde */
     display: flex;
     align-items: center;
     color: white;
-    font-size: 22px; /* MUCHO MÁS PEQUEÑO */
+    font-size: 20px;        /* más pequeño */
     z-index: 50;
 }
 
 #eye-icon {
-    width: 48px;  /* PERFECTO AHORA */
-    margin-right: 10px;
+    width: 48px;
+    margin-right: 6px;      /* menos espacio */
 }
 
 /* COMENTARIOS */
 #comments {
     position: fixed;
     bottom: 150px;
-    left: 22px;
+    left: 12px;
     color: white;
-    font-size: 28px; /* MÁS PEQUEÑO */
+    font-size: 28px;
     line-height: 32px;
     display: flex;
     flex-direction: column-reverse;
@@ -80,14 +80,14 @@ body, html {
 /* ICONOS INFERIORES */
 #bottom-icons {
     position: fixed;
-    bottom: 55px;
+    bottom: 1px;             /* al borde inferior */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 2px;    /* SEPARACIÓN EXACTA */
+    gap: 0px;                /* separación 0px */
     z-index: 50;
 }
 
 .bottom-btn {
-    width: 90px;  /* TAMAÑO EXACTO DE MAQUETA */
+    width: 90px;
 }
