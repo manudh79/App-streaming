@@ -1,51 +1,72 @@
-/* Base */
 :root{
-  --red:#C62828;
-  --white:#fff;
+  --red:#c62b2b;
+  --white:#ffffff;
 }
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;background:#000;color:var(--white);font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial}
 
-/* Video covers whole screen */
+body,html{
+  margin:0; height:100%; background:#000; overflow:hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+}
+
+/* video */
 #video{
   position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; z-index:1;
 }
 
-/* TOP LEFT (user icon only) */
+/* top left */
 #topLeft{
-  position:fixed; top:28px; left:18px; z-index:6; display:flex; flex-direction:column; gap:10px; align-items:flex-start;
+  position:fixed; top:22px; left:20px; z-index:10;
 }
 
-/* user icon (bigger, occupies roughly same area as a username would) */
-#userIconWrap{ display:flex; align-items:center; gap:8px; }
-#userIcon{ width:56px; height:56px; object-fit:contain; border-radius:6px; }
+#userIcon{
+  width:62px; height:62px; object-fit:contain;
+  margin-bottom:12px;
+}
 
-/* viewers row: eye icon first (to the left visually), then text to its right */
-#viewersRow{ display:flex; align-items:center; gap:12px; margin-top:4px; }
-#eyeIcon{ width:28px; height:28px; }
-#viewersText{ font-size:20px; opacity:0.95; }
+#viewersRow{
+  display:flex; align-items:center; gap:12px;
+}
 
-/* LIVE badge top-right */
+#eyeIcon{
+  width:32px; height:32px;
+}
+
+#viewersText{
+  font-size:26px; font-weight:500;
+}
+
+/* LIVE badge */
 #liveBadge{
-  position:fixed; top:28px; right:18px; z-index:6;
-  background:var(--red); color:var(--white); padding:10px 22px; border-radius:20px; font-weight:700; font-size:16px; display:none; box-shadow:0 6px 20px rgba(0,0,0,0.45);
+  position:fixed; top:28px; right:20px; z-index:12;
+  background:var(--red); padding:10px 30px;
+  border-radius:24px; font-size:20px;
+  font-weight:700; color:var(--white);
+  display:none;
 }
 
-/* COMMENTS bottom-left (new comments appear at bottom and older move up) */
-#commentsWrap{ position:fixed; left:18px; bottom:160px; width:70%; z-index:6; pointer-events:none; }
-#commentsInner{ display:flex; flex-direction:column-reverse; gap:12px; font-size:22px; line-height:1.05; text-shadow:0 2px 8px rgba(0,0,0,0.6); }
+/* comments */
+#commentsWrap{
+  position:fixed; bottom:170px; left:20px; z-index:12;
+  width:75%;
+}
 
-/* BOTTOM BAR: centered icons, no circles, sizes per your choice (option 2 -> 85px) */
+#commentsInner{
+  display:flex; flex-direction:column; gap:10px;
+  font-size:28px; font-weight:600;
+  text-shadow:0 0 10px black;
+}
+
+/* bottom bar */
 #bottomBar{
-  position:fixed; left:0; right:0; bottom:40px; z-index:6; display:flex; justify-content:center; gap:80px; align-items:center;
+  position:fixed; bottom:45px; left:0; right:0;
+  display:flex; justify-content:center;
+  gap:85px; z-index:12;
 }
-.iconBtn{ background:none; border:none; padding:0; display:flex; align-items:center; justify-content:center; }
-#recIcon,#camIcon,#heartIcon{ width:85px; height:85px; object-fit:contain; }
 
-/* Small screens adjustments */
-@media (max-width:420px){
-  #userIcon{ width:48px; height:48px; }
-  #viewersText{ font-size:18px }
-  #commentsInner{ font-size:20px }
-  #recIcon,#camIcon,#heartIcon{ width:72px;height:72px }
+.iconBtn{
+  background:none; border:none; padding:0;
+}
+
+#recIcon,#camIcon,#heartIcon{
+  width:95px; height:95px; object-fit:contain;
 }
