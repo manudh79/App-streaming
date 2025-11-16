@@ -8,43 +8,46 @@ const viewersCount = document.getElementById("viewers-count");
 let mediaRecorder;
 let chunks = [];
 let recording = false;
-let currentFacing = "user";  // "user" = frontal, "environment" = trasera
+let currentFacing = "user";
 
-/* ALWAYS MUTE VIDEO TO REMOVE ECHO */
 video.muted = true;
 video.setAttribute("muted", "true");
 
-function startCamera() {
-    navigator.mediaDevices.getUserMedia({
+let currentStream = null;
+
+async function startCamera() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+    }
+
+    currentStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: currentFacing },
         audio: true
-    })
-    .then(stream => {
-        video.srcObject = stream;
+    });
 
-        mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+    video.srcObject = currentStream;
 
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(chunks, { type: "video/mp4" });
-            chunks = [];
+    mediaRecorder = new MediaRecorder(currentStream);
+    mediaRecorder.ondataavailable = e => chunks.push(e.data);
 
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "stream.mp4";
-            a.click();
-        };
-    })
-    .catch(err => alert("Permite la cámara en Safari."));
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "video/mp4" });
+        chunks = [];
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "stream.mp4";
+        a.click();
+    };
 }
 
 startCamera();
 
 /* SWITCH CAMERA */
-camBtn.onclick = () => {
+camBtn.onclick = async () => {
     currentFacing = currentFacing === "user" ? "environment" : "user";
-    startCamera();
+    await startCamera();
 };
 
 /* RECORD */
@@ -67,7 +70,7 @@ setInterval(() => {
     viewersCount.textContent = viewers.toLocaleString("en-US");
 }, 1500);
 
-/* ARABIC COMMENTS */
+/* COMMENTS */
 const comments = [
     "سامر: أنت بطل 👍",
     "علي: ممتاز",
