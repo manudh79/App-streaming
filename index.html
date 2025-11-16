@@ -1,135 +1,137 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Live Overlay</title>
+<title>Live Overlay — Demo</title>
 <style>
-  :root{
-    --red:#c92b2b;
-    --white:#fff;
-  }
-  html,body{height:100%;margin:0;background:#000;color:var(--white);font-family:Inter,system-ui,Arial;overflow:hidden}
-  /* video + canvas stack */
+  :root{ --red:#c92b2b; --white:#fff }
+  html,body{height:100%;margin:0;background:#000;color:var(--white);font-family:Arial,system-ui;overflow:hidden}
+  /* video + canvas */
   #video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
   #canvas{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
-  /* overlays (visual DOM) - but actual recorded overlay is drawn on canvas */
-  .top-left{position:fixed;left:18px;top:18px;z-index:3;pointer-events:none}
-  .user-row{display:flex;align-items:center;gap:12px}
-  .user-row img{height:54px;width:auto;display:block}
-  .username{font-weight:700;font-size:30px;letter-spacing:1px}
+  /* visual overlay (not recorded, for UX) */
+  .top-left{position:fixed;left:18px;top:18px;z-index:4;pointer-events:none;direction:rtl}
+  .user-row{display:flex;align-items:center;gap:12px;flex-direction:row-reverse}
+  .user-row img{height:52px;width:auto;display:block;border-radius:6px}
+  .username{font-weight:700;font-size:30px;letter-spacing:1px;margin-left:6px}
   .viewers-row{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:20px}
   .viewers-row img{height:28px;width:auto;display:block}
-  .comments-list{margin-top:18px;font-size:18px;line-height:1.2;max-width:60vw}
-  /* top-right LIVE */
-  .top-right{position:fixed;right:18px;top:18px;z-index:3;pointer-events:none}
-  .live-badge{display:inline-block;background:var(--red);color:var(--white);padding:10px 20px;border-radius:28px;font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
-  .blink{animation:blink 700ms steps(1) infinite}
-  @keyframes blink{0%{opacity:1}50%{opacity:.2}100%{opacity:1}}
-  /* bottom controls */
-  .controls{position:fixed;left:0;right:0;bottom:26px;display:flex;justify-content:center;gap:48px;z-index:3;pointer-events:auto}
-  .control-btn{width:84px;height:84px;display:flex;align-items:center;justify-content:center;border-radius:999px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.02);cursor:pointer}
-  .control-btn img{max-width:70%;max-height:70%}
-  /* responsive tweaks */
-  @media (min-width:900px){ .user-row img{height:70px}.username{font-size:44px}.viewers-row{font-size:26px}.comments-list{font-size:20px} }
-  /* small helpers */
+  /* comments area (visual DOM only) */
+  .comments-visual{margin-top:22px;font-size:18px;line-height:1.4;max-width:55vw;text-align:left;direction:rtl;opacity:0.95}
+  /* top-right LIVE DOM (visual), but we also draw on canvas for recording */
+  .top-right{position:fixed;right:18px;top:18px;z-index:4;pointer-events:none}
+  .live-badge{display:inline-block;background:var(--red);color:var(--white);padding:10px 18px;border-radius:24px;font-weight:700;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
   .hidden{display:none!important}
+  .controls{position:fixed;left:0;right:0;bottom:26px;display:flex;justify-content:center;gap:48px;z-index:4;pointer-events:auto}
+  .control-btn{width:84px;height:84px;display:flex;align-items:center;justify-content:center;border-radius:999px;border:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.02);cursor:pointer}
+  .control-btn img{max-width:70%;max-height:70%}
+  @media(min-width:900px){ .user-row img{height:70px}.username{font-size:42px} }
 </style>
 </head>
 <body>
 
-<!-- VIDEO (muted to avoid echo) -->
 <video id="video" autoplay playsinline muted></video>
-<!-- Canvas where we draw video + overlays (and what we record) -->
-<canvas id="canvas"></canvas>
+<canvas id="canvas" aria-hidden="true"></canvas>
 
-<!-- Visual overlay (for user to see) -->
+<!-- VISUAL TOP LEFT (for user) -->
 <div class="top-left" aria-hidden="true">
   <div class="user-row">
-    <img id="imgUser" src="icons/KALAL.png" alt="user logo">
+    <img id="imgUser" src="icons/KALAL.png" alt="KALAL">
     <div class="username">KALAL_Y</div>
   </div>
-  <div class="viewers-row">
-    <img id="imgEye" src="icons/EYE.png" alt="eye">
+  <div class="viewers-row" style="margin-top:8px;">
+    <img id="imgEye" src="icons/EYE.png" alt="viewers">
     <div id="viewersText">50,604 viewers</div>
   </div>
-  <div class="comments-list" id="commentsBox" style="white-space:pre-line"></div>
+  <div class="comments-visual" id="commentsVisual" style="white-space:pre-line"></div>
 </div>
 
+<!-- VISUAL TOP RIGHT -->
 <div class="top-right" aria-hidden="true">
-  <div id="liveBadge" class="live-badge hidden">LIVE STREAMING</div>
+  <div id="liveDom" class="live-badge hidden">LIVE STREAMING</div>
 </div>
 
-<div class="controls" aria-hidden="false">
+<!-- CONTROLS -->
+<div class="controls" role="group" aria-label="controls">
   <button id="btnRec" class="control-btn" title="Record"><img src="icons/REC.png" alt="rec"></button>
   <button id="btnSwitch" class="control-btn" title="Switch camera"><img src="icons/CAM.png" alt="switch"></button>
   <button id="btnLike" class="control-btn" title="Like"><img src="icons/HEART.png" alt="heart"></button>
 </div>
 
 <script>
-/* ---------- Config ---------- */
-const VIDEO_FPS = 30;
+/* ---------- CONFIG ---------- */
+const FPS = 30;
 const MAX_COMMENTS = 6;
+const COMMENT_INTERVAL_MIN = 3000; // 3s
+const COMMENT_INTERVAL_MAX = 4000; // 4s
 
-/* ---------- Elements ---------- */
+/* ---------- ELEMENTS ---------- */
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const liveBadge = document.getElementById('liveBadge');
+
+const imgUser = document.getElementById('imgUser');
+const imgEye = document.getElementById('imgEye');
+const liveDom = document.getElementById('liveDom');
+
 const viewersText = document.getElementById('viewersText');
-const commentsBox = document.getElementById('commentsBox');
+const commentsVisual = document.getElementById('commentsVisual');
 
 const btnRec = document.getElementById('btnRec');
 const btnSwitch = document.getElementById('btnSwitch');
 const btnLike = document.getElementById('btnLike');
 
-/* ---------- State ---------- */
+/* ---------- STATE ---------- */
 let usingFront = false;
 let mediaStream = null;
-let mixerStream = null;
 let recorder = null;
 let recordedChunks = [];
 let recording = false;
 let viewers = 50604;
 let comments = [];
 
-/* ---------- Camera & audio setup (no echo) ---------- */
+/* Arabic neutral comments + Arabic-style usernames */
+const arabicNames = ['ahmad','sara','nour','rania','amir','laila','omar','fatima','khaled','hana','yasmine','ibrahim'];
+const arabicMessages = [
+  'رائع! 🔥',
+  'ممتاز جدا',
+  'استمر! 👏',
+  'جميل جدا',
+  'أداء رائع',
+  'أحسنت 👍',
+  'واو! 😍',
+  'مستوى جميل',
+  'نحن معك',
+  'فكرة جميلة',
+  'أحب هذا! ❤️',
+  'ممتاز 👌',
+  'رهيب 🔥',
+  'جميل!'
+];
+
+/* ---------- CAMERA (with audio echo cancellation) ---------- */
 async function startCamera() {
   try {
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(t => t.stop());
-      mediaStream = null;
-    }
-
+    if (mediaStream) mediaStream.getTracks().forEach(t=>t.stop());
     const constraints = {
-      video: {
-        facingMode: usingFront ? 'user' : 'environment',
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      },
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        sampleRate: 48000
-      }
+      video: { facingMode: usingFront ? 'user' : 'environment', width:{ideal:1280}, height:{ideal:720} },
+      audio: { echoCancellation:true, noiseSuppression:true }
     };
-
-    // request camera + mic (we will mute playback to avoid echo)
     mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-
-    // attach to video element (muted) so user doesn't hear mic -> prevents echo
     video.srcObject = mediaStream;
-    video.muted = true;
-
+    video.muted = true; // do not play mic to speakers to avoid echo
     await video.play();
     resizeCanvas();
-  } catch (err) {
-    console.error('Camera error', err);
-    alert('Camera access failed. Please allow camera & microphone and refresh.');
+  } catch (e) {
+    console.error('camera error', e);
+    alert('Permite cámara/micrófono y recarga la página');
   }
 }
+startCamera();
 
-function resizeCanvas() {
+/* ---------- RESIZE ---------- */
+function resizeCanvas(){
   const w = video.videoWidth || window.innerWidth;
   const h = video.videoHeight || window.innerHeight;
   canvas.width = w;
@@ -138,152 +140,157 @@ function resizeCanvas() {
   canvas.style.height = '100%';
 }
 
-/* ---------- Overlay drawing (draw video + overlays onto canvas) ---------- */
-function drawLoop() {
+/* ---------- DRAW LOOP: draw video + overlays on canvas (what will be recorded) ---------- */
+function draw() {
   if (video.readyState >= 2) {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // USER ICON + NAME (upper-left)
-    const iconImg = document.getElementById('imgUser');
-    if (iconImg && iconImg.complete) ctx.drawImage(iconImg, 40, 40, 70, 70);
-    ctx.fillStyle = '#ffffff';
+    // draw user icon & name (top-left, RTL visual)
+    if (imgUser && imgUser.complete) ctx.drawImage(imgUser, 40, 40, 70, 70);
+    ctx.fillStyle = '#fff';
     ctx.font = `${Math.round(canvas.width * 0.03)}px Arial`;
     ctx.textBaseline = 'middle';
+    ctx.direction = 'rtl';
+    // draw username slightly to the right of the icon
     ctx.fillText('KALAL_Y', 125, 75);
 
-    // VIEWERS (under user)
-    const eye = document.getElementById('imgEye');
-    if (eye && eye.complete) ctx.drawImage(eye, 40, 140, 36, 36);
+    // draw viewers below user
+    if (imgEye && imgEye.complete) ctx.drawImage(imgEye, 40, 140, 36, 36);
     ctx.font = `${Math.round(canvas.width * 0.022)}px Arial`;
     ctx.fillText(viewers.toLocaleString() + ' viewers', 86, 160);
 
-    // COMMENTS (no background)
+    // draw comments (bottom-left area, stacked upwards)
     ctx.font = `${Math.round(canvas.width * 0.02)}px Arial`;
-    let cy = 200;
-    const last = comments.slice(-MAX_COMMENTS);
-    for (let i = 0; i < last.length; i++) {
-      const txt = `${last[i].user}: ${last[i].text}`;
-      ctx.fillText(txt, 40, cy);
-      cy += Math.round(canvas.width * 0.03);
+    ctx.fillStyle = '#fff';
+    ctx.textBaseline = 'alphabetic';
+    ctx.direction = 'rtl';
+    const paddingLeft = 40;
+    const lineHeight = Math.round(canvas.width * 0.035); // increased spacing
+    // start from bottom-left margin
+    let startY = canvas.height - 60;
+    const toDraw = comments.slice(-MAX_COMMENTS).reverse(); // newest at bottom
+    for (let i = 0; i < toDraw.length; i++) {
+      const txt = `${toDraw[i].user}: ${toDraw[i].text}`;
+      ctx.fillText(txt, paddingLeft, startY - (i * lineHeight));
     }
 
-    // LIVE badge top-right when recording
+    // draw LIVE badge top-right if recording (and blink by opacity)
     if (recording) {
-      const liveImg = document.getElementById('liveBadgeImg'); // used only if present (we also draw text)
-      // draw text badge:
       const bw = Math.round(canvas.width * 0.28);
       const bh = Math.round(canvas.width * 0.06);
       const bx = canvas.width - bw - 40;
       const by = 40;
-      // red rounded rect
+      // blinking via globalAlpha toggled by time
+      const t = Date.now();
+      ctx.save();
+      ctx.globalAlpha = (Math.floor(t/600) % 2) ? 1 : 0.25;
       ctx.fillStyle = 'rgba(201,43,43,1)';
       roundRect(ctx, bx, by, bw, bh, bh/2, true, false);
       ctx.fillStyle = '#fff';
       ctx.font = `${Math.round(canvas.width * 0.02)}px Arial`;
       ctx.textAlign = 'center';
       ctx.fillText('LIVE STREAMING', bx + bw/2, by + bh/2 + 2);
+      ctx.restore();
       ctx.textAlign = 'start';
     }
   }
-  requestAnimationFrame(drawLoop);
+  requestAnimationFrame(draw);
 }
 
-/* helper round rect */
-function roundRect(ctx, x, y, w, h, r, fill, stroke) {
-  if (typeof r === 'undefined') r = 5;
+/* rounded rectangle helper */
+function roundRect(ctx,x,y,w,h,r,fill,stroke){
+  if(typeof r==='undefined') r=5;
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y,     x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x,     y + h, r);
-  ctx.arcTo(x,     y + h, x,     y,     r);
-  ctx.arcTo(x,     y,     x + w, y,     r);
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
   ctx.closePath();
-  if (fill) ctx.fill();
-  if (stroke) ctx.stroke();
+  if(fill) ctx.fill();
+  if(stroke) ctx.stroke();
 }
 
-/* ---------- UI / simulated viewers + comments ---------- */
+/* ---------- Simulate viewers & Arabic comments (A: slow 3-4s) ---------- */
 setInterval(() => {
-  viewers = Math.floor(viewers * (1 + (Math.random() * 0.02 + 0.005))); // slow exponential-ish
+  viewers = Math.floor(viewers * (1 + (Math.random()*0.02 + 0.005)));
   viewersText.innerText = viewers.toLocaleString() + ' viewers';
 }, 2000);
 
-setInterval(() => {
-  const names = ['ahmed','khaled','youssef','salim','noor','layla','fatima','omar','zayd','sam'];
-  const msgs = ['🔥','💯','incredible','wow','nice','👏','great','👍','😍'];
-  const u = names[Math.floor(Math.random() * names.length)] + Math.floor(Math.random()*99);
-  const m = msgs[Math.floor(Math.random() * msgs.length)];
-  comments.push({user: u, text: m});
-  // update small DOM visual
-  commentsBox.innerText = comments.slice(-MAX_COMMENTS).map(c => `${c.user}: ${c.text}`).join('\n');
-}, 2200);
+function pushRandomArabicComment(){
+  const name = arabicNames[Math.floor(Math.random()*arabicNames.length)] + Math.floor(Math.random()*90);
+  const msg = arabicMessages[Math.floor(Math.random()*arabicMessages.length)];
+  comments.push({user: name, text: msg});
+  // update visual box
+  commentsVisual.innerText = comments.slice(-MAX_COMMENTS).map(c => `${c.user}: ${c.text}`).reverse().join('\n');
+}
 
-/* ---------- Recording logic (canvas + mic) ---------- */
-async function startRecording() {
-  if (!mediaStream) {
-    alert('Camera not ready yet.');
-    return;
+// start comments slowly (3-4s)
+function startArabicComments(){
+  function tick(){
+    pushRandomArabicComment();
+    const delay = COMMENT_INTERVAL_MIN + Math.floor(Math.random() * (COMMENT_INTERVAL_MAX - COMMENT_INTERVAL_MIN));
+    setTimeout(tick, delay);
   }
+  setTimeout(tick, 1200);
+}
+startArabicComments();
 
-  // ensure canvas matches video size
-  resizeCanvas();
+/* ---------- Recording: capture canvas (video) + mic (audio) ---------- */
+async function startRecording() {
+  if (!mediaStream) { alert('Cámara no lista. Espera unos segundos.'); return; }
+  resizeCanvas(); // ensure correct size
 
-  // create mixed stream: canvas video + audio tracks from mediaStream
-  const canvasStream = canvas.captureStream(VIDEO_FPS);
+  // canvas video stream
+  const canvasStream = canvas.captureStream(FPS);
+
+  // mixed stream: take video from canvas + audio from camera
   const mixed = new MediaStream();
-  // add video track(s) from canvas stream
   canvasStream.getVideoTracks().forEach(t => mixed.addTrack(t));
-  // add audio tracks from camera/mic (if any)
-  if (mediaStream.getAudioTracks().length > 0) {
+  // add microphone audio tracks if present
+  if (mediaStream.getAudioTracks().length) {
     mediaStream.getAudioTracks().forEach(t => mixed.addTrack(t));
   }
 
-  // create MediaRecorder on mixed stream
+  recordedChunks = [];
   const options = { mimeType: 'video/webm;codecs=vp9' };
   try {
     recorder = new MediaRecorder(mixed, options);
   } catch (e) {
-    // fallback
     recorder = new MediaRecorder(mixed);
   }
 
-  recordedChunks = [];
   recorder.ondataavailable = e => { if (e.data && e.data.size) recordedChunks.push(e.data); };
-  recorder.onstop = onRecordingStop;
-  recorder.start();
+  recorder.onstop = onStopHandler;
+  recorder.start(1000); // gather in 1s blobs
+
+  // UI states
   recording = true;
-  // visual badge DOM + class
-  liveBadge.classList.remove('hidden');
-  liveBadge.classList.add('blink');
+  liveDom.classList.remove('hidden');
+  // also show DOM visual blink via class toggling
+  liveDom.classList.add('blink');
 }
 
 function stopRecording() {
   if (recorder && recorder.state !== 'inactive') recorder.stop();
   recording = false;
-  liveBadge.classList.remove('blink');
-  liveBadge.classList.add('hidden');
+  liveDom.classList.remove('blink');
+  liveDom.classList.add('hidden');
 }
 
-/* when recorder stops: create download */
-function onRecordingStop() {
+function onStopHandler() {
   const blob = new Blob(recordedChunks, { type: 'video/webm' });
   const url = URL.createObjectURL(blob);
-
-  // create link and click to download webm
   const a = document.createElement('a');
   a.href = url;
   a.download = 'stream_recording.webm';
   document.body.appendChild(a);
   a.click();
   a.remove();
-
-  // Cleanup objectURL after a bit
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-
-  // OPTIONAL: if you absolutely need MP4, do server-side conversion of this webm file.
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
 }
 
-/* ---------- UI Buttons ---------- */
+/* ---------- Buttons ---------- */
 btnSwitch.addEventListener('click', async () => {
   usingFront = !usingFront;
   await startCamera();
@@ -295,46 +302,36 @@ btnRec.addEventListener('click', () => {
 });
 
 btnLike.addEventListener('click', () => {
-  // quick like: push a small comment for visual feedback
-  comments.push({ user: 'you', text: '❤️' });
-  commentsBox.innerText = comments.slice(-MAX_COMMENTS).map(c => `${c.user}: ${c.text}`).join('\n');
+  // small visual feedback as arabic heart message
+  comments.push({user: 'you', text: '❤️'});
+  commentsVisual.innerText = comments.slice(-MAX_COMMENTS).map(c => `${c.user}: ${c.text}`).reverse().join('\n');
 });
 
-/* ---------- Robustness: handle video readiness, resize --- */
-video.addEventListener('loadedmetadata', () => {
-  resizeCanvas();
-});
+/* ---------- Boot ---------- */
+video.addEventListener('loadedmetadata', resizeCanvas);
 window.addEventListener('resize', resizeCanvas);
+draw(); // start draw loop
 
-/* ---------- Start camera + drawLoop ---------- */
-startCamera().then(() => drawLoop()).catch(()=>drawLoop());
-
-/* ---------- Helper: check icons exist, warn user if missing ---------- */
-function checkIcons() {
-  const required = [
-    {id:'imgUser', path:'icons/KALAL.png'},
-    {id:'imgEye', path:'icons/EYE.png'},
-    {id:'btnRec', path:'icons/REC.png'},
-    {id:'btnSwitch', path:'icons/CAM.png'},
-    {id:'btnLike', path:'icons/HEART.png'},
-    // live badge uses DOM element - we draw text badge, but still check if you want image
+/* ---------- ICON CHECK (warn missing icons) ---------- */
+function checkIcons(){
+  const imgs = [
+    {el:imgUser, path:'icons/KALAL.png'},
+    {el:imgEye, path:'icons/EYE.png'},
+    {el:btnRec, path:'icons/REC.png'},
+    {el:btnSwitch, path:'icons/CAM.png'},
+    {el:btnLike, path:'icons/HEART.png'},
   ];
-  required.forEach(it => {
-    const img = document.getElementById(it.id);
-    if (img && img.src) {
-      // try loading
-      const i = new Image();
-      i.onload = ()=>{};
-      i.onerror = ()=> {
-        console.warn('Icon missing or path wrong:', it.path);
-        // small visual indication: reduce opacity
-        if (img) img.style.opacity = '0.25';
-      };
-      i.src = it.path;
-    }
+  imgs.forEach(o=>{
+    const i = new Image();
+    i.onload = ()=>{};
+    i.onerror = ()=> {
+      console.warn('Missing icon:', o.path);
+      if (o.el) o.el.style.opacity = '0.25';
+    };
+    i.src = o.path;
   });
 }
-setTimeout(checkIcons, 800);
+setTimeout(checkIcons, 1000);
 
 </script>
 </body>
