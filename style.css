@@ -5,7 +5,6 @@ body {
     font-family: sans-serif;
 }
 
-/* VIDEO */
 video {
     position: fixed;
     top: 0;
@@ -16,7 +15,7 @@ video {
     z-index: -1;
 }
 
-/* USER ICON SUPER GRANDE */
+/* USER ICON */
 #user-box {
     position: absolute;
     top: calc(env(safe-area-inset-top) + 1px);
@@ -25,14 +24,14 @@ video {
 }
 
 #user-icon {
-    width: 260px;     /* <<<<< AHORA SÍ GRANDE */
+    width: 130px;   /* REDUCIDO A LA MITAD */
     height: auto;
 }
 
 /* VIEWERS */
 .viewers-box {
     position: absolute;
-    top: calc(env(safe-area-inset-top) + 80px);
+    top: calc(env(safe-area-inset-top) + 55px);
     left: 6px;
     display: flex;
     align-items: center;
@@ -58,8 +57,8 @@ video {
 /* LIVE BADGE */
 #live-badge {
     position: absolute;
-    top: calc(env(safe-area-inset-top) + 2px); /* BAJADO 1px */
-    right: 2px;                                /* MOVIDO 1px A IZQ */
+    top: calc(env(safe-area-inset-top) + 3px);   /* BAJADO 2px */
+    right: 3px;                                  /* SEPARADO 2px DEL BORDE */
     background: #C1272D;
     color: white;
     padding: 10px 25px;
@@ -91,10 +90,10 @@ video {
     z-index: 9999;
 }
 
-/* CONTROLES */
+/* CONTROLS */
 .controls {
     position: absolute;
-    bottom: calc(env(safe-area-inset-bottom) + 1px);
+    bottom: calc(env(safe-area-inset-bottom) + 11px); /* SUBIDOS 10px */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
