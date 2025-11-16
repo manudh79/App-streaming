@@ -6,46 +6,31 @@
   <title>KALAL_Y Live</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-  <!-- video element (hidden behind overlays) -->
   <video id="video" autoplay playsinline muted></video>
 
-  <!-- TOP LEFT: user icon only (no text), viewers + eye -->
   <div id="topLeft">
-    <div id="userIconWrap">
-      <img id="userIcon" src="icons/KALAL.png" alt="KALAL">
-    </div>
-
+    <img id="userIcon" src="icons/KALAL.png">
     <div id="viewersRow">
-      <img id="eyeIcon" src="icons/EYE.png" alt="eye">
+      <img id="eyeIcon" src="icons/EYE.png">
       <div id="viewersText">50,604 viewers</div>
     </div>
   </div>
 
-  <!-- LIVE badge top-right -->
   <div id="liveBadge">LIVE STREAMING</div>
 
-  <!-- COMMENTS: bottom-left, newest at bottom -->
   <div id="commentsWrap">
-    <div id="commentsInner" aria-live="polite" ></div>
+    <div id="commentsInner"></div>
   </div>
 
-  <!-- BOTTOM CENTER ICONS -->
   <div id="bottomBar">
-    <button id="recBtn" class="iconBtn" title="Record">
-      <img id="recIcon" src="icons/REC.png" alt="rec">
-    </button>
-
-    <button id="camBtn" class="iconBtn" title="Switch camera">
-      <img id="camIcon" src="icons/CAM.png" alt="cam">
-    </button>
-
-    <button id="likeBtn" class="iconBtn" title="Like">
-      <img id="heartIcon" src="icons/HEART.png" alt="heart">
-    </button>
+    <button id="recBtn" class="iconBtn"><img src="icons/REC.png" id="recIcon"></button>
+    <button id="camBtn" class="iconBtn"><img src="icons/CAM.png" id="camIcon"></button>
+    <button id="likeBtn" class="iconBtn"><img src="icons/HEART.png" id="heartIcon"></button>
   </div>
 
   <script src="script.js"></script>
 </body>
-</html 
+</html>
