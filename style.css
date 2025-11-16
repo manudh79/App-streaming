@@ -19,12 +19,12 @@ body,html{
 }
 
 #userIcon{
-  width:62px; height:62px; object-fit:contain;
+  width:100px; height:100px; object-fit:contain;
   margin-bottom:12px;
 }
 
 #viewersRow{
-  display:flex; align-items:center; gap:12px;
+  display:flex; align-items:center; gap:5px;
 }
 
 #eyeIcon{
