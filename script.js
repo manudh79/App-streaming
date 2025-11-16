@@ -1,95 +1,121 @@
-/* ELEMENTOS */
+/****************************************
+ * CÁMARA
+ ****************************************/
 const video = document.getElementById("video");
+const recBtn = document.getElementById("rec-btn");
+const camBtn = document.getElementById("cam-btn");
 const liveBadge = document.getElementById("live-badge");
-const viewersText = document.getElementById("viewer-number");
-const commentsBox = document.getElementById("comments");
 
-/* Grabación */
+let stream;
 let recorder;
 let chunks = [];
+let usingFront = true;
 
-/* Cámara */
+/* INICIAR CÁMARA */
 async function startCamera() {
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: true
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+    }
+
+    stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+            facingMode: usingFront ? "user" : "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+        },
+        audio: false   // SIN ECO
     });
 
     video.srcObject = stream;
 }
+
 startCamera();
 
-/* VIEWERS SUBIENDO PROGRESIVO */
-let viewers = 50757;
-setInterval(() => {
-    viewers += Math.floor(Math.random() * 30 + 10);
-    viewersText.textContent = viewers.toLocaleString();
-}, 1200);
+/* CAMBIAR CÁMARA */
+camBtn.onclick = () => {
+    usingFront = !usingFront;
+    startCamera();
+};
 
-/* LISTA DE NOMBRES + COMENTARIOS ÁRABES */
-const arabNames = ["سيف", "كريم", "علي", "مروان", "سارة", "وليد", "نور", "رائد"];
-const arabMsgs = [
-    "استمر 👍",
+/****************************************
+ * GRABACIÓN + EXPORTACIÓN MP4
+ ****************************************/
+recBtn.onclick = () => {
+    if (!recorder) startRecording();
+    else stopRecording();
+};
+
+function startRecording() {
+    chunks = [];
+
+    recorder = new MediaRecorder(stream, {
+        mimeType: "video/webm"
+    });
+
+    recorder.ondataavailable = e => {
+        if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "stream_recording.webm";
+        a.click();
+
+        URL.revokeObjectURL(url);
+        recorder = null;
+    };
+
+    recorder.start();
+    liveBadge.style.display = "block"; // muestra LIVE
+}
+
+function stopRecording() {
+    recorder.stop();
+    liveBadge.style.display = "none"; // oculta LIVE
+}
+
+/****************************************
+ * VIEWERS SUBIENDO
+ ****************************************/
+let viewers = 50000;
+setInterval(() => {
+    viewers = Math.floor(viewers * 1.004);
+    document.getElementById("viewers-count").textContent =
+        viewers.toLocaleString() + " viewers";
+}, 2000);
+
+/****************************************
+ * COMENTARIOS ÁRABES
+ ****************************************/
+const commentsBox = document.getElementById("comments");
+
+const names = ["علي", "سيف", "وليد", "فهد", "كريم", "راشد", "مراد"];
+const msgs = [
     "جميل جداً 👍",
-    "🔥 استمر 🔥",
-    "أنت بطل 👍",
+    "استمر 👍",
     "عمل رائع 👍",
-    "أداء ممتاز 👍",
+    "🔥🔥 استمر",
     "ممتاز جداً 👍"
 ];
 
-/* COMENTARIOS AUTOMÁTICOS (solo árabe) */
 function addComment() {
-    const name = arabNames[Math.floor(Math.random() * arabNames.length)];
-    const msg = arabMsgs[Math.floor(Math.random() * arabMsgs.length)];
+    const name = names[Math.floor(Math.random() * names.length)];
+    const msg = msgs[Math.floor(Math.random() * msgs.length)];
+    const full = `${name}: ${msg}`;
 
     const div = document.createElement("div");
-    div.textContent = `${name}: ${msg}`;
+    div.textContent = full;
 
     commentsBox.appendChild(div);
 
-    while (commentsBox.children.length > 5) {
+    // máx 5 comentarios
+    if (commentsBox.children.length > 5) {
         commentsBox.removeChild(commentsBox.children[0]);
     }
 }
 
-setInterval(addComment, 1700);
-
-/* GRABACIÓN — INCLUYENDO OVERLAYS */
-document.getElementById("rec-btn").addEventListener("click", () => {
-    if (!recorder) startRecording();
-    else stopRecording();
-});
-
-async function startRecording() {
-    liveBadge.style.display = "block";
-
-    const stream = video.captureStream(30);
-    recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
-
-    chunks = [];
-
-    recorder.ondataavailable = e => chunks.push(e.data);
-
-    recorder.onstop = exportRecording;
-
-    recorder.start();
-}
-
-function stopRecording() {
-    liveBadge.style.display = "none";
-    recorder.stop();
-}
-
-function exportRecording() {
-    const blob = new Blob(chunks, { type: "video/webm" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "recording.mp4";
-    a.click();
-
-    URL.revokeObjectURL(url);
-    recorder = null;
-}
+setInterval(addComment, 2300);
