@@ -18,20 +18,20 @@ body, html {
     z-index: 1;
 }
 
-/* ICONO USUARIO — pegado a la esquina izquierda */
+/* ICONO USUARIO */
 #user-icon {
     position: fixed;
-    top: 1px;       /* casi al borde superior */
-    left: 1px;      /* casi al borde izquierdo */
+    top: 1px;           /* pegado arriba */
+    left: 1px;          /* pegado izquierda */
     width: 115px;
     z-index: 50;
 }
 
-/* LIVE STREAMING — casi pegado arriba y derecha */
+/* LIVE STREAMING – AHORA A LA ALTURA DEL USUARIO */
 #live-badge {
     position: fixed;
-    top: 1px;       /* 1px margen superior */
-    right: 1px;     /* 1px margen derecho */
+    top: 1px;           /* más arriba aún */
+    right: 1px;
     width: 240px;
     display: none;
     z-index: 50;
@@ -47,32 +47,32 @@ body, html {
 /* VIEWERS */
 #viewers-box {
     position: fixed;
-    top: 86px;       /* MÁS PEGADO AL USUARIO */
-    left: 4px;       /* pegado al borde */
+    top: 86px;
+    left: 4px;
     display: flex;
     align-items: center;
     color: white;
-    font-size: 20px;        /* más pequeño */
+    font-size: 20px;
     z-index: 50;
 }
 
 #eye-icon {
     width: 48px;
-    margin-right: 6px;      /* menos espacio */
+    margin-right: 6px;
 }
 
-/* COMENTARIOS */
+/* COMENTARIOS – ahora más pequeños y más abajo */
 #comments {
     position: fixed;
-    bottom: 150px;
+    bottom: 115px;         /* MÁS CERCA DE LOS ICONOS */
     left: 12px;
     color: white;
-    font-size: 28px;
-    line-height: 32px;
+    font-size: 22px;        /* MÁS PEQUEÑOS */
+    line-height: 26px;
     display: flex;
     flex-direction: column-reverse;
-    gap: 5px;
-    max-height: 380px;
+    gap: 4px;
+    max-height: 360px;
     z-index: 50;
     text-shadow: 2px 2px 4px black;
 }
@@ -80,11 +80,11 @@ body, html {
 /* ICONOS INFERIORES */
 #bottom-icons {
     position: fixed;
-    bottom: 1px;             /* al borde inferior */
+    bottom: 1px;                /* al borde inferior */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 0px;                /* separación 0px */
+    gap: 0px;                   /* sin separación */
     z-index: 50;
 }
 
