@@ -1,151 +1,95 @@
-/* ----------------------------------------------------
-   VARIABLES GLOBALES
----------------------------------------------------- */
-let stream;
+/* ELEMENTOS */
+const video = document.getElementById("video");
+const liveBadge = document.getElementById("live-badge");
+const viewersText = document.getElementById("viewer-number");
+const commentsBox = document.getElementById("comments");
+
+/* Grabación */
 let recorder;
 let chunks = [];
-let usingFront = false;
 
-const video = document.getElementById("video");
-const recBtn = document.getElementById("recBtn");
-const camBtn = document.getElementById("camBtn");
-const liveBadge = document.getElementById("liveBadge");
-const viewersText = document.getElementById("viewersText");
-const commentsInner = document.getElementById("commentsInner");
-
-/* ----------------------------------------------------
-   1. INICIAR CÁMARA
----------------------------------------------------- */
+/* Cámara */
 async function startCamera() {
-  if (stream) {
-    stream.getTracks().forEach(t => t.stop());
-  }
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: true
+    });
 
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: usingFront ? "user" : "environment" },
-    audio: true
-  });
-
-  video.srcObject = stream;
+    video.srcObject = stream;
 }
 startCamera();
 
-/* ----------------------------------------------------
-   2. CAMBIAR CÁMARA
----------------------------------------------------- */
-camBtn.addEventListener("click", () => {
-  usingFront = !usingFront;
-  startCamera();
-});
+/* VIEWERS SUBIENDO PROGRESIVO */
+let viewers = 50757;
+setInterval(() => {
+    viewers += Math.floor(Math.random() * 30 + 10);
+    viewersText.textContent = viewers.toLocaleString();
+}, 1200);
 
-/* ----------------------------------------------------
-   3. PARPADEO LIVE STREAMING
----------------------------------------------------- */
-let liveBlinkInterval = null;
+/* LISTA DE NOMBRES + COMENTARIOS ÁRABES */
+const arabNames = ["سيف", "كريم", "علي", "مروان", "سارة", "وليد", "نور", "رائد"];
+const arabMsgs = [
+    "استمر 👍",
+    "جميل جداً 👍",
+    "🔥 استمر 🔥",
+    "أنت بطل 👍",
+    "عمل رائع 👍",
+    "أداء ممتاز 👍",
+    "ممتاز جداً 👍"
+];
 
-function startLiveBlink() {
-  liveBadge.style.display = "block";
-  liveBlinkInterval = setInterval(() => {
-    liveBadge.style.opacity = liveBadge.style.opacity === "0.3" ? "1" : "0.3";
-  }, 800);
+/* COMENTARIOS AUTOMÁTICOS (solo árabe) */
+function addComment() {
+    const name = arabNames[Math.floor(Math.random() * arabNames.length)];
+    const msg = arabMsgs[Math.floor(Math.random() * arabMsgs.length)];
+
+    const div = document.createElement("div");
+    div.textContent = `${name}: ${msg}`;
+
+    commentsBox.appendChild(div);
+
+    while (commentsBox.children.length > 5) {
+        commentsBox.removeChild(commentsBox.children[0]);
+    }
 }
 
-function stopLiveBlink() {
-  clearInterval(liveBlinkInterval);
-  liveBadge.style.display = "none";
-  liveBadge.style.opacity = "1";
-}
+setInterval(addComment, 1700);
 
-/* ----------------------------------------------------
-   4. GRABAR
----------------------------------------------------- */
-recBtn.addEventListener("click", () => {
-  if (!recorder) startRecording();
-  else stopRecording();
+/* GRABACIÓN — INCLUYENDO OVERLAYS */
+document.getElementById("rec-btn").addEventListener("click", () => {
+    if (!recorder) startRecording();
+    else stopRecording();
 });
 
 async function startRecording() {
-  const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext("2d");
+    liveBadge.style.display = "block";
 
-  chunks = [];
+    const stream = video.captureStream(30);
+    recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
 
-  recorder = new MediaRecorder(canvas.captureStream(30), {
-    mimeType: "video/webm;codecs=vp09"
-  });
+    chunks = [];
 
-  recorder.ondataavailable = e => {
-    if (e.data.size > 0) chunks.push(e.data);
-  };
+    recorder.ondataavailable = e => chunks.push(e.data);
 
-  recorder.onstop = () => {
+    recorder.onstop = exportRecording;
+
+    recorder.start();
+}
+
+function stopRecording() {
+    liveBadge.style.display = "none";
+    recorder.stop();
+}
+
+function exportRecording() {
     const blob = new Blob(chunks, { type: "video/webm" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = "stream.mp4";
+    a.download = "recording.mp4";
     a.click();
 
     URL.revokeObjectURL(url);
     recorder = null;
-  };
-
-  function drawFrame() {
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    requestAnimationFrame(drawFrame);
-  }
-  drawFrame();
-
-  recorder.start();
-  startLiveBlink();
 }
-
-/* ----------------------------------------------------
-   5. DETENER GRABACIÓN
----------------------------------------------------- */
-function stopRecording() {
-  recorder.stop();
-  stopLiveBlink();
-}
-
-/* ----------------------------------------------------
-   6. VIEWERS — crecimiento progresivo
----------------------------------------------------- */
-let viewers = 50604;
-
-setInterval(() => {
-  viewers += Math.floor(Math.random() * 20) + 5;
-  viewersText.textContent = viewers.toLocaleString() + " viewers";
-}, 1500);
-
-/* ----------------------------------------------------
-   7. COMENTARIOS — SOLO ÁRABE
----------------------------------------------------- */
-
-const arabicNames = ["سيف", "مروان", "علي", "كريم", "خالد", "سارة", "نور", "ليلى"];
-const arabicMsgs = [
-  "أداء ممتاز 👍",
-  "استمر 🔥🔥",
-  "جميل جدًا 👍",
-  "أنت بطل 👍",
-  "عمل رائع 🔥",
-  "استمر يا أسد 👍"
-];
-
-setInterval(() => {
-  const name = arabicNames[Math.floor(Math.random() * arabicNames.length)];
-  const msg = arabicMsgs[Math.floor(Math.random() * arabicMsgs.length)];
-
-  const newComment = document.createElement("div");
-  newComment.textContent = `${name}: ${msg}`;
-
-  commentsInner.appendChild(newComment);
-
-  if (commentsInner.children.length > 5) {
-    commentsInner.removeChild(commentsInner.children[0]);
-  }
-
-}, 1700);
