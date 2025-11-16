@@ -1,50 +1,49 @@
-<!doctype html>
-<html lang="ar">
+<!DOCTYPE html>
+<html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KALAL_Y Live</title>
-  <link rel="stylesheet" href="./style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Stream</title>
+
+    <!-- CSS CORRECTO -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- JS CORRECTO -->
+    <script src="script.js" defer></script>
 </head>
 
 <body>
 
-  <!-- VIDEO -->
-  <video id="video" autoplay playsinline muted></video>
+    <!-- VIDEO -->
+    <video id="video" autoplay playsinline muted></video>
 
-  <!-- TOP LEFT -->
-  <div id="topLeft">
-    <img id="userIcon" src="./icons/KALAL.png" />
-
-    <div id="viewersRow">
-      <img id="eyeIcon" src="./icons/EYE.png" />
-      <div id="viewersText">50,604 viewers</div>
+    <!-- STATUS BAR -->
+    <div id="status-bar">
+        <span id="clock">00:00</span>
+        <span>🟢</span>
     </div>
-  </div>
 
-  <!-- LIVE BADGE (se oculta hasta pulsar REC) -->
-  <div id="liveBadge">LIVE STREAMING</div>
+    <!-- ICONO USUARIO -->
+    <img id="user-icon" src="icons/KALAL.png">
 
-  <!-- COMMENTS -->
-  <div id="commentsWrap">
-    <div id="commentsInner"></div>
-  </div>
+    <!-- LIVE STREAMING -->
+    <img id="live-badge" src="icons/LIVE.png">
 
-  <!-- BOTTOM ICON BAR -->
-  <div id="bottomBar">
-    <button id="recBtn" class="iconBtn">
-      <img id="recIcon" src="./icons/REC.png" />
-    </button>
+    <!-- VIEWERS -->
+    <div id="viewers-box">
+        <img id="eye-icon" src="icons/EYE.png">
+        <span id="viewers-count">50,000 viewers</span>
+    </div>
 
-    <button id="camBtn" class="iconBtn">
-      <img id="camIcon" src="./icons/CAM.png" />
-    </button>
+    <!-- COMENTARIOS -->
+    <div id="comments"></div>
 
-    <button id="likeBtn" class="iconBtn">
-      <img id="heartIcon" src="./icons/HEART.png" />
-    </button>
-  </div>
+    <!-- ICONOS ABAJO -->
+    <div id="bottom-icons">
+        <img id="rec-btn" class="bottom-btn" src="icons/REC.png">
+        <img id="cam-btn" class="bottom-btn" src="icons/CAM.png">
+        <img id="heart-btn" class="bottom-btn" src="icons/HEART.png">
+    </div>
 
-  <script src="./script.js"></script>
 </body>
 </html>
