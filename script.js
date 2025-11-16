@@ -1,91 +1,118 @@
-const video = document.getElementById("camera");
-const recBtn = document.getElementById("rec-btn");
-const camBtn = document.getElementById("cam-btn");
-const liveBadge = document.getElementById("live-badge");
-const commentsBox = document.getElementById("comments");
-const viewersCount = document.getElementById("viewers-count");
+/* -------------------- CAMERA -------------------- */
 
-let mediaRecorder;
-let chunks = [];
-let recording = false;
-let currentFacing = "user";
-
-video.muted = true;
-video.setAttribute("muted", "true");
-
-let currentStream = null;
+let currentCamera = "environment"; // TRASERA POR DEFECTO
 
 async function startCamera() {
-    if (currentStream) {
-        currentStream.getTracks().forEach(t => t.stop());
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: currentCamera },
+            audio: false        // SIN SONIDO → SIN ECO
+        });
+
+        const video = document.getElementById("video");
+        video.srcObject = stream;
+
+        return stream;
+
+    } catch (e) {
+        console.error("Error cámara:", e);
+        alert("No se pudo acceder a la cámara");
     }
-
-    currentStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: currentFacing },
-        audio: true
-    });
-
-    video.srcObject = currentStream;
-
-    mediaRecorder = new MediaRecorder(currentStream);
-    mediaRecorder.ondataavailable = e => chunks.push(e.data);
-
-    mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "video/mp4" });
-        chunks = [];
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "stream.mp4";
-        a.click();
-    };
 }
 
 startCamera();
 
-/* SWITCH CAMERA */
-camBtn.onclick = async () => {
-    currentFacing = currentFacing === "user" ? "environment" : "user";
-    await startCamera();
-};
+/* Cambio de cámara */
+document.getElementById("camBtn").addEventListener("click", async () => {
+    currentCamera = currentCamera === "environment" ? "user" : "environment";
+    startCamera();
+});
 
-/* RECORD */
-recBtn.onclick = () => {
-    if (!recording) {
-        mediaRecorder.start();
-        recording = true;
-        liveBadge.style.display = "block";
-    } else {
-        mediaRecorder.stop();
-        recording = false;
-        liveBadge.style.display = "none";
-    }
-};
 
-/* VIEWERS */
-let viewers = 51000;
-setInterval(() => {
-    viewers += Math.floor(Math.random() * 8);
-    viewersCount.textContent = viewers.toLocaleString("en-US");
-}, 1500);
+/* -------------------- VIEWERS -------------------- */
 
-/* COMMENTS */
-const comments = [
+let viewers = 51063;
+
+function updateViewers() {
+    viewers += Math.floor(Math.random() * 5);
+    document.getElementById("viewersNumber").textContent =
+        viewers.toLocaleString("en-US");
+}
+
+setInterval(updateViewers, 800);
+
+
+/* -------------------- COMMENTS -------------------- */
+
+const commentsList = [
     "سامر: أنت بطل 👍",
     "علي: ممتاز",
     "كريم: عمل رائع",
-    "مروان: أحسنت 👍",
-    "هيثم: رائع 🔥"
+    "مروان: أحسنت",
+    "هيثم: رائع 🔥",
+    "وليد: ممتاز 👍",
+    "رامي: استمر",
+    "خالد: أحسنت 👍"
 ];
 
-setInterval(() => {
-    const c = document.createElement("div");
-    c.textContent = comments[Math.floor(Math.random() * comments.length)];
+function addComment() {
+    const box = document.getElementById("comments");
+    const comment = document.createElement("div");
 
-    commentsBox.appendChild(c);
+    let text = commentsList[Math.floor(Math.random() * commentsList.length)];
 
-    if (commentsBox.children.length > 5) {
-        commentsBox.removeChild(commentsBox.children[0]);
+    comment.textContent = text;
+
+    box.appendChild(comment);
+
+    if (box.children.length > 6) {
+        box.children[0].remove();
     }
-}, 2300);
+}
+
+setInterval(addComment, 1800);
+
+
+/* -------------------- RECORDING -------------------- */
+
+let rec = false;
+let mediaRecorder;
+let recordedChunks = [];
+
+document.getElementById("recBtn").addEventListener("click", async () => {
+
+    if (!rec) {
+        const stream = document.getElementById("video").srcObject;
+
+        mediaRecorder = new MediaRecorder(stream, {
+            mimeType: "video/webm; codecs=vp8"
+        });
+
+        recordedChunks = [];
+
+        mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+
+        mediaRecorder.onstop = downloadVideo;
+
+        mediaRecorder.start();
+        rec = true;
+        document.getElementById("liveIcon").style.opacity = "1";
+
+    } else {
+        mediaRecorder.stop();
+        rec = false;
+    }
+});
+
+
+function downloadVideo() {
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "stream.mp4";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
