@@ -1,12 +1,8 @@
-/* ============================
-   GENERAL
-============================= */
-
 body, html {
     margin: 0;
     padding: 0;
-    overflow: hidden;
     background: black;
+    overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -19,29 +15,23 @@ video {
     left: 0;
 }
 
-/* ============================
-   USER ICON (ARRIBA IZQUIERDA)
-============================= */
-
+/* USER ICON */
 #user-box {
     position: absolute;
-    top: 6px;        /* SUBIDO PARA NO SOLAPAR */
-    left: 6px;
+    top: 6px;
+    left: 8px;
     z-index: 10;
 }
 
 #userIcon {
-    width: 155px;    /* COMO LA ÚLTIMA VERSIÓN BUENA */
+    width: 130px;   /* REDUCIDO A LA MITAD */
     height: auto;
 }
 
-/* ============================
-   VIEWERS (JUSTO DEBAJO)
-============================= */
-
+/* VIEWERS */
 #viewers-box {
     position: absolute;
-    top: 78px;         /* AJUSTE PERFECTO PARA NO SOLAPAR */
+    top: 62px;    /* DEBAJO DEL ICONO DE USUARIO */
     left: 10px;
     display: flex;
     align-items: center;
@@ -50,100 +40,74 @@ video {
 }
 
 #eyeIcon {
-    width: 42px;
+    width: 38px;
     height: auto;
 }
 
 #viewersNumber {
     color: white;
-    font-size: 23px;   /* UN PX MENOS */
+    font-size: 22px;
     font-weight: 300;
 }
 
 #viewersLabel {
     color: white;
-    font-size: 22px;
+    font-size: 20px;
     opacity: 0.9;
 }
 
-/* ============================
-   LIVE STREAMING BADGE
-============================= */
-
-#liveBadge {
+/* LIVE STREAMING BADGE */
+#liveContainer {
     position: absolute;
-    top: 6px;
-    right: 8px;
-    background: #c62828;
-    padding: 12px 28px;
-    border-radius: 40px;
-    color: white;
-    font-size: 20px;
-    font-weight: 600;
-    display: none;       /* SOLO SE MUESTRA AL GRABAR */
+    top: 5px;     /* MUY PEGADO ARRIBA */
+    right: 8px;   /* MUY PEGADO A LA DERECHA */
+    display: none;
     z-index: 10;
-    animation: blink 1.2s infinite;
+}
+
+#liveIcon {
+    width: 260px;    /* MÁS PEQUEÑO QUE ANTES */
+    height: auto;
+    animation: blink 1.3s infinite;
 }
 
 @keyframes blink {
     0% { opacity: 1; }
-    50% { opacity: 0.35; }
+    50% { opacity: 0.4; }
     100% { opacity: 1; }
 }
 
-/* ============================
-   COMMENTS (ÁRABE)
-============================= */
-
+/* COMMENTS */
 #comments {
     position: absolute;
     bottom: 150px;
     left: 10px;
+    width: 90%;
     display: flex;
     flex-direction: column;
-    gap: 7px;
-    width: 90%;
+    gap: 9px; /* un pelín más grandes */
     z-index: 10;
 }
 
 .comment {
     color: white;
-    font-size: 31px;   /* Un pelín más grande */
+    font-size: 32px;   /* ligeramente más grande */
     font-weight: 400;
     text-shadow: 0px 0px 4px black;
 }
 
-/* ============================
-   BOTTOM ICON BUTTONS
-============================= */
-
-#controls {
+/* BOTTOM ICONS */
+#bottomIcons {
     position: absolute;
-    bottom: 38px;     /* donde estaban correctos */
+    bottom: 35px;
     width: 100%;
     display: flex;
     justify-content: center;
-    gap: 2px;
+    gap: 0px;  /* como pediste */
     z-index: 10;
 }
 
-.control-btn {
-    width: 120px;   /* tamaño final solicitado */
-    height: 120px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.control-btn img {
-    width: 100%;
+.btnIcon {
+    width: 95px; /* TAMAÑO ANTERIOR — LOS DEJAMOS COMO ESTABAN */
     height: auto;
-}
-
-/* ============================
-   RECORD BUTTON FIX
-============================= */
-
-#record-btn img {
-    border-radius: 50%;
 }
