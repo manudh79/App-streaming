@@ -21,36 +21,58 @@ video {
     z-index: 10;
 }
 
+/* --- ICONO KALAL (usuario) --- */
 #userIcon {
-    width: 120px; 
+    position: absolute;
+    top: 70px;       /* pegado arriba */
+    left: 10px;      /* pegado a la izquierda */
+    width: 115px;
     height: auto;
+    z-index: 10;
 }
 
+/* --- LIVE STREAMING (alineado con usuario a la derecha) --- */
+#liveContainer {
+    position: absolute;
+    top: 70px;       /* MISMA ALTURA QUE EL ICONO KALAL */
+    right: 10px;     /* pegado al borde */
+    z-index: 10;
+    display: none;   /* solo aparece al grabar */
+}
+
+#liveIcon {
+    width: 215px;    /* tamaño reducido */
+    height: auto;
+    animation: blink 1.3s infinite;
+}
+
+/* --- VIEWERS (justo debajo del icono de usuario) --- */
 #viewers-box {
     position: absolute;
-    top: 122px; /* ANTES estaba 125px, ahora 2px más cerca */
-    left: 4px;
+    top: 70px + 48px;   /* icono KALAL + 8px → AJUSTE exacto */
+    left: 10px;
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 6px;
     z-index: 10;
 }
 
 #eyeIcon {
-    width: 40px;
+    width: 42px;
     height: auto;
 }
 
 #viewersNumber {
     color: white;
-    font-size: 19px;   /* ANTES 21px → un punto menos */
+    font-size: 19px;     /* tamaño ya reducido */
     font-weight: 300;
 }
 
 #viewersLabel {
     color: white;
-    font-size: 18px;   /* ANTES 20px → un punto menos */
-    opacity: 0.8;
+    font-size: 18px;
+    opacity: 0.85;
 }
 
 /* LIVE STREAMING */
