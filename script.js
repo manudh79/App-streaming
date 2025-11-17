@@ -9,91 +9,96 @@ let usingFrontCamera = false;
 let mediaRecorder;
 let chunks = [];
 
-/* =======================
-   START CAMERA (BACK FIRST)
-======================= */
+/* ==========================
+   INICIAR CÁMARA TRASERA
+========================== */
 async function startCamera() {
+
     if (currentStream) {
         currentStream.getTracks().forEach(t => t.stop());
     }
 
-    let constraints = {
-        audio: false,     // NO ECO
-        video: {
-            facingMode: usingFrontCamera ? "user" : "environment"
-        }
-    };
+    currentStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: usingFrontCamera ? "user" : "environment" },
+        audio: false
+    });
 
-    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = currentStream;
 }
 
 startCamera();
 
-/* =======================
-   CAMERA SWITCH
-======================= */
+/* Cambiar cámara */
 camBtn.addEventListener("click", () => {
     usingFrontCamera = !usingFrontCamera;
     startCamera();
 });
 
-/* =======================
-   RECORDING
-======================= */
+/* ==========================
+      GRABACIÓN
+========================== */
 recBtn.addEventListener("click", () => {
+
     if (!mediaRecorder || mediaRecorder.state === "inactive") {
-        
+
         liveContainer.style.display = "block";
 
-        mediaRecorder = new MediaRecorder(currentStream, {
-            mimeType: "video/webm"
-        });
-
+        mediaRecorder = new MediaRecorder(currentStream, { mimeType: "video/webm" });
         chunks = [];
+
         mediaRecorder.ondataavailable = e => chunks.push(e.data);
 
         mediaRecorder.onstop = () => {
             liveContainer.style.display = "none";
 
-            let blob = new Blob(chunks, { type: "video/mp4" });
-            let url = URL.createObjectURL(blob);
+            const blob = new Blob(chunks, { type: "video/mp4" });
+            const url = URL.createObjectURL(blob);
 
-            let a = document.createElement("a");
+            const a = document.createElement("a");
             a.href = url;
             a.download = "stream.mp4";
-            document.body.appendChild(a);
             a.click();
-            a.remove();
         };
 
         mediaRecorder.start();
-    } 
-    else {
+    } else {
         mediaRecorder.stop();
     }
 });
 
-/* =======================
-   COMMENTS SYSTEM
-======================= */
+/* ==========================
+      COMENTARIOS
+========================== */
 
+// nombres árabes
 const names = ["رائد","علي","كريم","مروان","هيثم","سيف"];
-const comments = ["رائع","عمل رائع","ممتاز","أحسنت","استمر"];
+
+// comentarios base
+const texts = ["جميل", "عمل رائع", "ممتاز", "استمر", "أحسنت"];
+
+// emojis (solo 40% de uso)
+const emojis = ["🔥", "👍"];
 
 function addComment() {
 
-    let name = names[Math.floor(Math.random() * names.length)];
-    let text = comments[Math.floor(Math.random() * comments.length)];
+    const name = names[Math.floor(Math.random() * names.length)];
+    const text = texts[Math.floor(Math.random() * texts.length)];
 
-    let el = document.createElement("div");
+    let line = `${name}: ${text}`;
+
+    // solo 40% de probabilidad de añadir un emoji
+    if (Math.random() < 0.40) {
+        line += " " + emojis[Math.floor(Math.random() * emojis.length)];
+    }
+
+    const el = document.createElement("div");
     el.className = "comment";
-    el.textContent = `${name}: ${text}`;
+    el.textContent = line;
 
-    commentsBox.appendChild(el);
+    commentsBox.prepend(el);
 
     if (commentsBox.children.length > 6) {
-        commentsBox.removeChild(commentsBox.children[0]);
+        commentsBox.removeChild(commentsBox.lastChild);
     }
 }
 
