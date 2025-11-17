@@ -51,13 +51,13 @@ body, html {
 }
 
 #viewersNumber {
-    font-size: 21px;
+    font-size: 19px;
     color: white;
     font-weight: 500;
 }
 
 #viewersLabel {
-    font-size: 19px;
+    font-size: 17px;
     color: white;
     opacity: 0.85;
 }
