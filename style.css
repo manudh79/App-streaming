@@ -5,8 +5,6 @@ body, html {
     overflow: hidden;
     background: black;
     font-family: Arial, sans-serif;
-
-    /* ACTIVA EL SOPORTE PARA NOTCH DE iPHONE */
     padding-top: env(safe-area-inset-top);
 }
 
@@ -24,7 +22,7 @@ body, html {
 /* ===== USER ICON ===== */
 #user-box {
     position: absolute;
-    top: calc(env(safe-area-inset-top) + 2px);   /* CORREGIDO PARA iPHONE */
+    top: calc(env(safe-area-inset-top) + 2px);
     left: 5px;
     display: flex;
     align-items: center;
@@ -39,7 +37,7 @@ body, html {
 /* ===== VIEWERS ===== */
 #viewers-box {
     position: absolute;
-    top: calc(env(safe-area-inset-top) + 58px);  /* 1px debajo del icono USER */
+    top: calc(env(safe-area-inset-top) + 85px);   /* MÁS ABAJO */
     left: 7px;
     display: flex;
     align-items: center;
@@ -53,7 +51,7 @@ body, html {
 }
 
 #viewersNumber {
-    font-size: 21px;       /* 1 px más pequeño */
+    font-size: 21px;
     color: white;
     font-weight: 500;
 }
@@ -67,13 +65,13 @@ body, html {
 /* ===== LIVE STREAMING ===== */
 #liveContainer {
     position: absolute;
-    top: calc(env(safe-area-inset-top) + 2px);   /* alineado con USER */
+    top: calc(env(safe-area-inset-top) + 2px);
     right: 5px;
     z-index: 12;
 }
 
 #liveIcon {
-    width: 165px;    /* 10px más pequeño */
+    width: 165px;
     height: auto;
     display: none;
 }
