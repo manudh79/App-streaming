@@ -1,132 +1,104 @@
+/* ===== GENERAL ===== */
 body, html {
     margin: 0;
     padding: 0;
-    background: black;
     overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    background: black;
+    font-family: Arial, sans-serif;
 }
 
-video {
+/* ===== VIDEO ===== */
+#video {
     position: fixed;
+    top: 0;
+    left: 0;
     width: 100vw;
     height: 100vh;
     object-fit: cover;
+    z-index: 1;
 }
 
-/* ICONO USUARIO */
+/* ===== USER ICON ===== */
 #user-box {
     position: absolute;
-    top: 1px;
-    left: 1px;
+    top: 5px;        /* Súper pegado arriba */
+    left: 5px;
+    display: flex;
+    align-items: center;
     z-index: 10;
 }
 
-/* --- ICONO KALAL (usuario) --- */
 #userIcon {
-    position: absolute;
-    top: 70px;       /* pegado arriba */
-    left: 10px;      /* pegado a la izquierda */
     width: 115px;
     height: auto;
-    z-index: 10;
 }
 
-/* --- LIVE STREAMING (alineado con usuario a la derecha) --- */
-#liveContainer {
-    position: absolute;
-    top: 70px;       /* MISMA ALTURA QUE EL ICONO KALAL */
-    right: 10px;     /* pegado al borde */
-    z-index: 10;
-    display: none;   /* solo aparece al grabar */
-}
-
-#liveIcon {
-    width: 215px;    /* tamaño reducido */
-    height: auto;
-    animation: blink 1.3s infinite;
-}
-
-/* --- VIEWERS (justo debajo del icono de usuario) --- */
+/* ===== VIEWERS ===== */
 #viewers-box {
     position: absolute;
-    top: 70px + 48px;   /* icono KALAL + 8px → AJUSTE exacto */
-    left: 10px;
+    top: 55px;      /* JUSTO debajo del user icon */
+    left: 7px;
     display: flex;
-    flex-direction: row;
     align-items: center;
-    gap: 6px;
+    gap: 6px;       /* separación icono – número */
     z-index: 10;
 }
 
 #eyeIcon {
-    width: 42px;
+    width: 32px;
     height: auto;
 }
 
 #viewersNumber {
+    font-size: 22px;
     color: white;
-    font-size: 19px;     /* tamaño ya reducido */
-    font-weight: 300;
+    font-weight: 500;
 }
 
 #viewersLabel {
+    font-size: 20px;
     color: white;
-    font-size: 18px;
     opacity: 0.85;
 }
 
-/* LIVE STREAMING */
+/* ===== LIVE STREAMING ===== */
 #liveContainer {
     position: absolute;
-    top: 1px;
-    right: 1px;
-    display: none;
-    z-index: 10;
+    top: 5px;       /* alineado EXACTO con el icono usuario */
+    right: 5px;
+    z-index: 12;
 }
 
 #liveIcon {
-    width: 215px;  /* ANTES 240px → 10px más pequeño */
+    width: 175px;   /* 10px más pequeño */
     height: auto;
-    animation: blink 1.3s infinite;
+    display: none;  /* solo aparece al grabar */
 }
 
-@keyframes blink {
-    0% { opacity: 1; }
-    50% { opacity: .45; }
-    100% { opacity: 1; }
-}
-
-/* COMMENTS */
+/* ===== COMMENTS ===== */
 #comments {
     position: absolute;
     bottom: 150px;
     left: 10px;
     width: 90%;
-    display: flex;
-    flex-direction: column-reverse;
-    gap: 6px;
-    z-index: 10;
-}
-
-.comment {
+    font-size: 26px;     /* un poco más pequeño */
+    line-height: 33px;
     color: white;
-    font-size: 27px;  /* más pequeños */
-    font-weight: 400;
-    text-shadow: 0px 0px 6px black;
+    z-index: 20;
 }
 
-/* ICONOS INFERIORES */
+/* ===== BOTTOM ICONS ===== */
 #bottomIcons {
     position: absolute;
-    bottom: 30px;
+    bottom: 15px;
     width: 100%;
     display: flex;
     justify-content: center;
-    gap: 0px;  /* sin separación */
-    z-index: 10;
+    gap: 0px;            /* separación 0px */
+    z-index: 15;
 }
 
 .btnIcon {
-    width: 120px; /* MÁS GRANDES */
+    width: 120px;        /*  más grandes */
     height: auto;
 }
