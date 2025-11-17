@@ -1,105 +1,126 @@
-let video = document.getElementById("video");
-let recBtn = document.getElementById("recBtn");
-let camBtn = document.getElementById("camBtn");
-let liveContainer = document.getElementById("liveContainer");
-let commentsBox = document.getElementById("comments");
-
-let currentStream;
-let usingFrontCamera = false;
+/* ===== SETUP DE CÁMARA ===== */
+const video = document.getElementById("video");
+let usingFront = false;
 let mediaRecorder;
-let chunks = [];
+let recordedChunks = [];
+let recording = false;
 
-/* ==========================
-   INICIAR CÁMARA TRASERA
-========================== */
 async function startCamera() {
+    const constraints = {
+        audio: false,  // evita eco completo
+        video: {
+            facingMode: usingFront ? "user" : "environment"
+        }
+    };
 
-    if (currentStream) {
-        currentStream.getTracks().forEach(t => t.stop());
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        window.currentStream = stream;
+    } catch (err) {
+        console.error("Error cámara:", err);
     }
-
-    currentStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: usingFrontCamera ? "user" : "environment" },
-        audio: false
-    });
-
-    video.srcObject = currentStream;
 }
 
 startCamera();
 
-/* Cambiar cámara */
-camBtn.addEventListener("click", () => {
-    usingFrontCamera = !usingFrontCamera;
+/* ===== SWITCH CAMERA ===== */
+document.getElementById("camBtn").onclick = () => {
+    usingFront = !usingFront;
     startCamera();
-});
+};
 
-/* ==========================
-      GRABACIÓN
-========================== */
-recBtn.addEventListener("click", () => {
+/* ===== LIVE STREAMING ===== */
+const liveIcon = document.getElementById("liveIcon");
 
-    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+function startLive() {
+    liveIcon.style.display = "block";
+    liveIcon.style.animation = "blink 1s infinite";
+}
 
-        liveContainer.style.display = "block";
+function stopLive() {
+    liveIcon.style.display = "none";
+    liveIcon.style.animation = "none";
+}
 
-        mediaRecorder = new MediaRecorder(currentStream, { mimeType: "video/webm" });
-        chunks = [];
+/* ===== ANIMACIÓN PARPADEO ===== */
+const style = document.createElement("style");
+style.innerHTML = `
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}`;
+document.head.appendChild(style);
 
-        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+/* ===== GRABAR ===== */
+document.getElementById("recBtn").onclick = async () => {
+    if (!recording) {
+        recordedChunks = [];
+        const stream = video.srcObject;
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+
+        mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
 
         mediaRecorder.onstop = () => {
-            liveContainer.style.display = "none";
-
-            const blob = new Blob(chunks, { type: "video/mp4" });
+            const blob = new Blob(recordedChunks, { type: "video/mp4" });
             const url = URL.createObjectURL(blob);
 
             const a = document.createElement("a");
             a.href = url;
             a.download = "stream.mp4";
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
+
+            stopLive();
         };
 
         mediaRecorder.start();
+        recording = true;
+        startLive();
     } else {
         mediaRecorder.stop();
+        recording = false;
     }
-});
+};
 
-/* ==========================
-      COMENTARIOS
-========================== */
+/* ===== COMENTARIOS ===== */
+const commentsBox = document.getElementById("comments");
 
-// nombres árabes
-const names = ["رائد","علي","كريم","مروان","هيثم","سيف"];
+const authors = ["علي", "سيف", "مروان", "كريم", "هيثم", "رائد"];
+const messages = [
+    "استمر", "عمل رائع", "أحسنت", "ممتاز", "جميل جدا"
+];
 
-// comentarios base
-const texts = ["جميل", "عمل رائع", "ممتاز", "استمر", "أحسنت"];
-
-// emojis (solo 40% de uso)
-const emojis = ["🔥", "👍"];
+function randomEmoji() {
+    return Math.random() < 0.4
+        ? (Math.random() < 0.5 ? "🔥" : "👍")
+        : "";
+}
 
 function addComment() {
+    const author = authors[Math.floor(Math.random() * authors.length)];
+    const msg = messages[Math.floor(Math.random() * messages.length)];
+    const emoji = randomEmoji();
 
-    const name = names[Math.floor(Math.random() * names.length)];
-    const text = texts[Math.floor(Math.random() * texts.length)];
+    const line = document.createElement("div");
+    line.textContent = `${author}: ${msg} ${emoji}`;
+    commentsBox.appendChild(line);
 
-    let line = `${name}: ${text}`;
-
-    // solo 40% de probabilidad de añadir un emoji
-    if (Math.random() < 0.40) {
-        line += " " + emojis[Math.floor(Math.random() * emojis.length)];
-    }
-
-    const el = document.createElement("div");
-    el.className = "comment";
-    el.textContent = line;
-
-    commentsBox.prepend(el);
-
-    if (commentsBox.children.length > 6) {
-        commentsBox.removeChild(commentsBox.lastChild);
+    if (commentsBox.children.length > 5) {
+        commentsBox.removeChild(commentsBox.children[0]);
     }
 }
 
-setInterval(addComment, 2000);
+setInterval(addComment, 2200);
+
+/* ===== VIEWERS ===== */
+const viewersNumber = document.getElementById("viewersNumber");
+let viewers = 51824;
+
+setInterval(() => {
+    viewers += Math.floor(Math.random() * 30);
+    viewersNumber.textContent = viewers.toLocaleString("en-US");
+}, 2500);
