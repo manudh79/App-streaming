@@ -1,89 +1,153 @@
-let mediaStream = null;
-let recorder = null;
-let recordedChunks = [];
-let usingFrontCamera = false;
+/* =============================
+   ELEMENTOS
+============================= */
+const video = document.getElementById("video");
+const recBtn = document.getElementById("recBtn");
+const camBtn = document.getElementById("camBtn");
+const liveIcon = document.getElementById("liveIcon");
+const commentsBox = document.getElementById("comments");
+const viewersNumber = document.getElementById("viewersNumber");
+
+let currentStream = null;
 let recordingStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let usingFront = false;
 
-/* ========= INICIAR CÁMARA ========= */
+/* =============================
+   INICIAR CÁMARA
+============================= */
 async function startCamera() {
-    if (mediaStream) {
-        mediaStream.getTracks().forEach(t => t.stop());
+    if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
     }
 
-    mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: usingFrontCamera ? "user" : "environment" },
+    const constraints = {
+        video: { facingMode: usingFront ? "user" : "environment" },
         audio: true
-    });
+    };
 
-    document.getElementById("video").srcObject = mediaStream;
+    try {
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
 
-    if (!recordingStream) {
-        recordingStream = new MediaStream([
-            mediaStream.getVideoTracks()[0],
-            mediaStream.getAudioTracks()[0]
-        ]);
-    } else {
-        const newVideoTrack = mediaStream.getVideoTracks()[0];
-        const oldTrack = recordingStream.getVideoTracks()[0];
+        if (!recordingStream) {
+            recordingStream = new MediaStream([
+                currentStream.getVideoTracks()[0],
+                currentStream.getAudioTracks()[0]
+            ]);
+        } else {
+            const newTrack = currentStream.getVideoTracks()[0];
+            const oldTrack = recordingStream.getVideoTracks()[0];
 
-        recordingStream.removeTrack(oldTrack);
-        oldTrack.stop();
+            recordingStream.removeTrack(oldTrack);
+            oldTrack.stop();
+            recordingStream.addTrack(newTrack);
+        }
 
-        recordingStream.addTrack(newVideoTrack);
+    } catch (err) {
+        console.error("Error cámara:", err);
     }
 }
 
-/* ========= CAMBIAR CÁMARA SIN CORTAR GRABACIÓN ========= */
-async function switchCamera() {
-    usingFrontCamera = !usingFrontCamera;
-    await startCamera();
-}
+startCamera();
 
-/* ========= INICIAR GRABACIÓN ========= */
+/* =============================
+   CAMBIAR CÁMARA SIN PARAR GRABACIÓN
+============================= */
+camBtn.onclick = async () => {
+    usingFront = !usingFront;
+    await startCamera();
+};
+
+/* =============================
+   INICIAR GRABACIÓN
+============================= */
 function startRecording() {
     recordedChunks = [];
 
-    recorder = new MediaRecorder(recordingStream, {
+    mediaRecorder = new MediaRecorder(recordingStream, {
         mimeType: "video/webm;codecs=vp9"
     });
 
-    recorder.ondataavailable = e => recordedChunks.push(e.data);
+    mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+    };
 
-    recorder.onstop = saveRecording;
+    mediaRecorder.onstop = saveRecording;
 
-    recorder.start();
-    document.getElementById("liveIcon").style.display = "block";
+    mediaRecorder.start();
+
+    liveIcon.style.display = "block";
 }
 
-/* ========= PARAR GRABACIÓN ========= */
+/* =============================
+   PARAR GRABACIÓN
+============================= */
 function stopRecording() {
-    recorder.stop();
-    document.getElementById("liveIcon").style.display = "none";
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+    }
+    liveIcon.style.display = "none";
 }
 
-/* ========= GUARDAR ARCHIVO ========= */
+/* =============================
+   GUARDAR VÍDEO
+============================= */
 function saveRecording() {
     const blob = new Blob(recordedChunks, { type: "video/webm" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = "recording.webm";
+    a.download = "stream.webm";
     a.click();
 
     URL.revokeObjectURL(url);
 }
 
-/* ========= EVENTOS ========= */
-document.getElementById("recBtn").onclick = () => {
-    if (!recorder || recorder.state === "inactive") {
+/* =============================
+   BOTÓN REC
+============================= */
+recBtn.onclick = () => {
+    if (!mediaRecorder || mediaRecorder.state === "inactive") {
         startRecording();
     } else {
         stopRecording();
     }
 };
 
-document.getElementById("switchBtn").onclick = switchCamera;
+/* =============================
+   COMENTARIOS
+============================= */
+const names = ["علي","رائد","سيف","مروان","كريم","هيثم"];
+const texts = ["استمر", "أبدعت", "عمل رائع", "جميل", "ممتاز"];
+const emojis = ["🔥","👍"];
 
-/* ========= INICIAR TODO ========= */
-startCamera();
+function addComment() {
+    const name = names[Math.floor(Math.random()*names.length)];
+    const msg = texts[Math.floor(Math.random()*texts.length)];
+    const emoji = Math.random() < 0.4 ? emojis[Math.floor(Math.random()*2)] : "";
+
+    const div = document.createElement("div");
+    div.className = "comment";
+    div.textContent = `${name}: ${msg} ${emoji}`;
+
+    commentsBox.appendChild(div);
+
+    if (commentsBox.children.length > 5) {
+        commentsBox.removeChild(commentsBox.children[0]);
+    }
+}
+
+setInterval(addComment, 2200);
+
+/* =============================
+   VIEWERS EVOLUCIÓN
+============================= */
+let viewers = 51824;
+
+setInterval(() => {
+    viewers += Math.floor(Math.random() * 25);
+    viewersNumber.textContent = viewers.toLocaleString("en-US");
+}, 2500);
