@@ -26,10 +26,9 @@ video {
     height: auto;
 }
 
-/* VIEWERS */
 #viewers-box {
     position: absolute;
-    top: 125px; /* just 1px debajo del userIcon */
+    top: 122px; /* ANTES estaba 125px, ahora 2px más cerca */
     left: 4px;
     display: flex;
     align-items: center;
@@ -44,27 +43,27 @@ video {
 
 #viewersNumber {
     color: white;
-    font-size: 21px;
+    font-size: 19px;   /* ANTES 21px → un punto menos */
     font-weight: 300;
 }
 
 #viewersLabel {
     color: white;
-    font-size: 20px;
+    font-size: 18px;   /* ANTES 20px → un punto menos */
     opacity: 0.8;
 }
 
 /* LIVE STREAMING */
 #liveContainer {
     position: absolute;
-    top: 1px;  
-    right: 1px; 
+    top: 1px;
+    right: 1px;
     display: none;
     z-index: 10;
 }
 
 #liveIcon {
-    width: 240px; 
+    width: 215px;  /* ANTES 240px → 10px más pequeño */
     height: auto;
     animation: blink 1.3s infinite;
 }
