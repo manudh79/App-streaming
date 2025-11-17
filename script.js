@@ -1,94 +1,100 @@
-/* CAMERA */
+let video = document.getElementById("video");
+let recBtn = document.getElementById("recBtn");
+let camBtn = document.getElementById("camBtn");
+let liveContainer = document.getElementById("liveContainer");
+let commentsBox = document.getElementById("comments");
 
-let currentCamera = "environment"; // TRASERA POR DEFECTO
-let currentStream = null;
+let currentStream;
+let usingFrontCamera = false;
+let mediaRecorder;
+let chunks = [];
 
+/* =======================
+   START CAMERA (BACK FIRST)
+======================= */
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(t => t.stop());
     }
 
-    currentStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: currentCamera },
-        audio: false
-    });
+    let constraints = {
+        audio: false,     // NO ECO
+        video: {
+            facingMode: usingFrontCamera ? "user" : "environment"
+        }
+    };
 
-    document.getElementById("video").srcObject = currentStream;
+    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = currentStream;
 }
 
 startCamera();
 
-/* CHANGE CAMERA */
-
-document.getElementById("camBtn").onclick = () => {
-    currentCamera = currentCamera === "environment" ? "user" : "environment";
+/* =======================
+   CAMERA SWITCH
+======================= */
+camBtn.addEventListener("click", () => {
+    usingFrontCamera = !usingFrontCamera;
     startCamera();
-};
+});
 
-/* VIEWERS */
+/* =======================
+   RECORDING
+======================= */
+recBtn.addEventListener("click", () => {
+    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        
+        liveContainer.style.display = "block";
 
-let viewers = 50000;
-setInterval(() => {
-    viewers += Math.floor(Math.random() * 6);
-    document.getElementById("viewersNumber").textContent =
-        viewers.toLocaleString("en-US");
-}, 1200);
-
-/* COMMENTS */
-
-const commentsList = [
-    "سامر: أنت بطل 👍",
-    "علي: ممتاز",
-    "كريم: عمل رائع",
-    "مروان: أحسنت",
-    "هيثم: رائع 🔥"
-];
-
-setInterval(() => {
-    const box = document.getElementById("comments");
-    const c = document.createElement("div");
-    c.textContent = commentsList[Math.floor(Math.random() * commentsList.length)];
-    box.appendChild(c);
-    if (box.children.length > 6) box.children[0].remove();
-}, 1700);
-
-/* RECORDING */
-
-let rec = false;
-let mediaRecorder;
-let chunks = [];
-
-document.getElementById("recBtn").onclick = () => {
-    const live = document.getElementById("liveContainer");
-
-    if (!rec) {
         mediaRecorder = new MediaRecorder(currentStream, {
-            mimeType: "video/webm; codecs=vp8"
+            mimeType: "video/webm"
         });
 
         chunks = [];
         mediaRecorder.ondataavailable = e => chunks.push(e.data);
-        mediaRecorder.onstop = downloadVideo;
+
+        mediaRecorder.onstop = () => {
+            liveContainer.style.display = "none";
+
+            let blob = new Blob(chunks, { type: "video/mp4" });
+            let url = URL.createObjectURL(blob);
+
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "stream.mp4";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        };
 
         mediaRecorder.start();
-        rec = true;
-        live.style.display = "block";
-
-    } else {
+    } 
+    else {
         mediaRecorder.stop();
-        rec = false;
-        live.style.display = "none";
     }
-};
+});
 
-function downloadVideo() {
-    const blob = new Blob(chunks, { type: "video/webm" });
-    const url = URL.createObjectURL(blob);
+/* =======================
+   COMMENTS SYSTEM
+======================= */
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "stream.mp4";
-    a.click();
+const names = ["رائد","علي","كريم","مروان","هيثم","سيف"];
+const comments = ["رائع","عمل رائع","ممتاز","أحسنت","استمر"];
 
-    URL.revokeObjectURL(url);
+function addComment() {
+
+    let name = names[Math.floor(Math.random() * names.length)];
+    let text = comments[Math.floor(Math.random() * comments.length)];
+
+    let el = document.createElement("div");
+    el.className = "comment";
+    el.textContent = `${name}: ${text}`;
+
+    commentsBox.appendChild(el);
+
+    if (commentsBox.children.length > 6) {
+        commentsBox.removeChild(commentsBox.children[0]);
+    }
 }
+
+setInterval(addComment, 2000);
