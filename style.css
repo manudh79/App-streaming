@@ -103,3 +103,14 @@ body, html {
     width: 120px;
     height: auto;
 }
+
+/* ===== PARPADEO SUAVE DEL ICONO LIVE ===== */
+.blink {
+    animation: blinkAnim 1.4s ease-in-out infinite;
+}
+
+@keyframes blinkAnim {
+    0% { opacity: 1; }
+    50% { opacity: 0.25; }
+    100% { opacity: 1; }
+}
