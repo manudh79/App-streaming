@@ -13,6 +13,7 @@ let recordingStream = null;
 let mediaRecorder = null;
 let recordedChunks = [];
 let usingFront = false;
+let isRecording = false;
 
 /* =============================
    INICIAR CÁMARA
@@ -27,33 +28,30 @@ async function startCamera() {
         audio: true
     };
 
-    try {
-        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = currentStream;
+    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = currentStream;
 
-        if (!recordingStream) {
-            recordingStream = new MediaStream([
-                currentStream.getVideoTracks()[0],
-                currentStream.getAudioTracks()[0]
-            ]);
-        } else {
-            const newTrack = currentStream.getVideoTracks()[0];
-            const oldTrack = recordingStream.getVideoTracks()[0];
+    if (!recordingStream) {
+        // Primera asignación
+        recordingStream = new MediaStream([
+            currentStream.getVideoTracks()[0],
+            currentStream.getAudioTracks()[0]
+        ]);
+    } else {
+        // ⚠️ IMPORTANTE: NO detener la pista vieja
+        // Solo la sustituimos sin cerrar el MediaRecorder
+        const newVideoTrack = currentStream.getVideoTracks()[0];
+        const oldTrack = recordingStream.getVideoTracks()[0];
 
-            recordingStream.removeTrack(oldTrack);
-            oldTrack.stop();
-            recordingStream.addTrack(newTrack);
-        }
-
-    } catch (err) {
-        console.error("Error cámara:", err);
+        recordingStream.removeTrack(oldTrack);
+        recordingStream.addTrack(newVideoTrack);
     }
 }
 
 startCamera();
 
 /* =============================
-   CAMBIAR CÁMARA SIN PARAR GRABACIÓN
+   CAMBIAR CÁMARA SIN CORTAR GRABACIÓN
 ============================= */
 camBtn.onclick = async () => {
     usingFront = !usingFront;
@@ -74,25 +72,29 @@ function startRecording() {
         if (e.data.size > 0) recordedChunks.push(e.data);
     };
 
-    mediaRecorder.onstop = saveRecording;
+    mediaRecorder.onstop = () => {
+        if (!isRecording) {  
+            // Solo descargar si EL USUARIO pulsó STOP
+            saveRecording();
+        }
+    };
 
     mediaRecorder.start();
-
     liveIcon.style.display = "block";
+    isRecording = true;
 }
 
 /* =============================
-   PARAR GRABACIÓN
+   PARAR GRABACIÓN (DESCARGA)
 ============================= */
 function stopRecording() {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-        mediaRecorder.stop();
-    }
+    isRecording = false;
+    mediaRecorder.stop();
     liveIcon.style.display = "none";
 }
 
 /* =============================
-   GUARDAR VÍDEO
+   GUARDAR EL ARCHIVO
 ============================= */
 function saveRecording() {
     const blob = new Blob(recordedChunks, { type: "video/webm" });
@@ -107,10 +109,10 @@ function saveRecording() {
 }
 
 /* =============================
-   BOTÓN REC
+   BOTÓN DE REC
 ============================= */
 recBtn.onclick = () => {
-    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+    if (!isRecording) {
         startRecording();
     } else {
         stopRecording();
@@ -143,7 +145,7 @@ function addComment() {
 setInterval(addComment, 2200);
 
 /* =============================
-   VIEWERS EVOLUCIÓN
+   VIEWERS EN AUMENTO
 ============================= */
 let viewers = 51824;
 
