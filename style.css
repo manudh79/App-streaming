@@ -5,6 +5,9 @@ body, html {
     overflow: hidden;
     background: black;
     font-family: Arial, sans-serif;
+
+    /* ACTIVA EL SOPORTE PARA NOTCH DE iPHONE */
+    padding-top: env(safe-area-inset-top);
 }
 
 /* ===== VIDEO ===== */
@@ -21,7 +24,7 @@ body, html {
 /* ===== USER ICON ===== */
 #user-box {
     position: absolute;
-    top: 5px;        /* Súper pegado arriba */
+    top: calc(env(safe-area-inset-top) + 2px);   /* CORREGIDO PARA iPHONE */
     left: 5px;
     display: flex;
     align-items: center;
@@ -36,11 +39,11 @@ body, html {
 /* ===== VIEWERS ===== */
 #viewers-box {
     position: absolute;
-    top: 55px;      /* JUSTO debajo del user icon */
+    top: calc(env(safe-area-inset-top) + 58px);  /* 1px debajo del icono USER */
     left: 7px;
     display: flex;
     align-items: center;
-    gap: 6px;       /* separación icono – número */
+    gap: 6px;
     z-index: 10;
 }
 
@@ -50,13 +53,13 @@ body, html {
 }
 
 #viewersNumber {
-    font-size: 22px;
+    font-size: 21px;       /* 1 px más pequeño */
     color: white;
     font-weight: 500;
 }
 
 #viewersLabel {
-    font-size: 20px;
+    font-size: 19px;
     color: white;
     opacity: 0.85;
 }
@@ -64,15 +67,15 @@ body, html {
 /* ===== LIVE STREAMING ===== */
 #liveContainer {
     position: absolute;
-    top: 5px;       /* alineado EXACTO con el icono usuario */
+    top: calc(env(safe-area-inset-top) + 2px);   /* alineado con USER */
     right: 5px;
     z-index: 12;
 }
 
 #liveIcon {
-    width: 175px;   /* 10px más pequeño */
+    width: 165px;    /* 10px más pequeño */
     height: auto;
-    display: none;  /* solo aparece al grabar */
+    display: none;
 }
 
 /* ===== COMMENTS ===== */
@@ -81,7 +84,7 @@ body, html {
     bottom: 150px;
     left: 10px;
     width: 90%;
-    font-size: 26px;     /* un poco más pequeño */
+    font-size: 26px;
     line-height: 33px;
     color: white;
     z-index: 20;
@@ -94,11 +97,11 @@ body, html {
     width: 100%;
     display: flex;
     justify-content: center;
-    gap: 0px;            /* separación 0px */
+    gap: 0;
     z-index: 15;
 }
 
 .btnIcon {
-    width: 120px;        /*  más grandes */
+    width: 120px;
     height: auto;
 }
