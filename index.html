@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>App Streaming</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming App</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -12,36 +12,30 @@
     <!-- VIDEO -->
     <video id="video" autoplay playsinline></video>
 
-    <!-- CANVAS OCULTO PARA GRABACIÓN -->
-    <canvas id="recordCanvas" style="display:none !important;"></canvas>
+    <!-- OVERLAY UI (lo que ves en pantalla) -->
+    <img id="userIcon" class="ui" src="icons/KALAL.png">
+    <span id="username" class="ui username">KALAL_Y</span>
 
-    <!-- CABECERA: ICONO USER -->
-    <img id="userIcon" class="icon" src="icons/KALAL.png" alt="User Icon" />
-
-    <!-- USERNAME -->
-    <div id="username">KALAL_Y</div>
-
-    <!-- VIEWERS -->
-    <div id="viewersContainer">
-        <img id="eyeIcon" class="iconSmall" src="icons/EYE.png" />
+    <div id="viewersBox" class="ui">
+        <img id="eyeIcon" src="icons/EYE.png">
         <span id="viewersCount">51,928 viewers</span>
     </div>
 
-    <!-- LIVE STREAMING -->
-    <div id="liveBadge">LIVE STREAMING</div>
+    <div id="liveBadge" class="ui">LIVE STREAMING</div>
 
     <!-- COMENTARIOS -->
     <div id="comments"></div>
 
-    <!-- BOTÓN REC -->
-    <img id="recButton" class="bottomIcon" src="icons/REC.png" />
+    <!-- BOTONES INFERIORES -->
+    <div id="controls">
+        <img id="recButton" src="icons/REC.png">
+        <img id="switchCam" src="icons/CAM.png">
+        <img id="likeButton" src="icons/HEART.png">
+    </div>
 
-    <!-- CAMBIO CÁMARA -->
-    <img id="switchCam" class="bottomIcon" src="icons/CAM.png" />
+    <!-- CANVAS OCULTO PARA GRABACIÓN -->
+    <canvas id="recordCanvas"></canvas>
 
-    <!-- LIKE -->
-    <img id="likeButton" class="bottomIcon" src="icons/HEART.png" />
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
