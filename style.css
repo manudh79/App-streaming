@@ -1,108 +1,113 @@
-/* ======== TU UI ORIGINAL (NO TOCADA) ======== */
+/* === style.css (base: tus estilos originales, mantén tal cual) === */
 
-body {
-    margin: 0;
-    overflow: hidden;
-    background: black;
-}
-
-#video {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 1;
+:root {
+  --white: #ffffff;
+  --accent: #d22;
 }
 
-.ui {
-    position: fixed;
-    z-index: 10;
+/* base */
+html,body{margin:0;padding:0;height:100%;background:#000;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+
+/* video (hidden visually, used as source) */
+#video{
+  position:fixed;
+  top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;
 }
 
-/* USER ICON */
-#userIcon {
-    top: 6px;
-    left: 6px;
-    width: 58px;
+/* USER ICON (top-left) */
+#KALAL_ICON{
+  position:fixed;
+  top:6px;
+  left:6px;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  z-index:30;
+  pointer-events:none;
 }
 
-/* USERNAME */
-.username {
-    top: 16px;
-    left: 72px;
-    font-size: 19px;
-    color: white;
-    font-weight: bold;
+/* USER NAME: positioned near icon but invisible if you want icon-only */
+#KALAL_NAME{
+  position:fixed;
+  top:18px;
+  left:72px;
+  color:var(--white);
+  font-size:20px;
+  font-weight:700;
+  z-index:30;
+  pointer-events:none;
 }
 
-/* VIEWERS */
-#viewersBox {
-    top: 48px;
-    left: 72px;
-    display: flex;
-    align-items: center;
+/* VIEWERS row (under user) */
+#VIEWERS_ROW{
+  position:fixed;
+  top:52px;
+  left:72px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  z-index:30;
+  pointer-events:none;
 }
-#viewersBox img {
-    width: 28px;
-    margin-right: 5px;
+#EYE_ICON{ width:28px; height:22px; }
+#VIEWERS_TEXT{ color:var(--white); font-size:20px; }
+
+/* LIVE UI (top-right) */
+#LIVE_UI{
+  position:fixed;
+  top:6px;
+  right:6px;
+  z-index:40;
+  pointer-events:none;
 }
-#viewersCount {
-    font-size: 17px;
-    color: white;
+#LIVE_IMG{ width:170px; height:auto; display:block; }
+
+/* blinking class */
+.blink{ animation: blinkAnim 1.4s ease-in-out infinite; }
+@keyframes blinkAnim { 0%{opacity:1} 50%{opacity:0.35} 100%{opacity:1} }
+
+/* COMMENTS (bottom-left) */
+#COMMENTS_UI{
+  position:fixed;
+  left:12px;
+  bottom:150px;
+  z-index:25;
+  color:var(--white);
+  font-size:28px;
+  line-height:34px;
+  pointer-events:none;
 }
 
-/* LIVE BADGE */
-#liveBadge {
-    top: 6px;
-    right: 6px;
-    padding: 8px 18px;
-    background: #d22;
-    border-radius: 14px;
-    font-size: 18px;
-    font-weight: bold;
-    color: white;
-    opacity: 0;
+/* BOTTOM ICONS (centered) */
+#BOTTOM_ICONS{
+  position:fixed;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:40px;
+  z-index:35;
+  display:flex;
+  gap:0px;
+  pointer-events:auto;
+}
+.bottom-btn{
+  background:transparent;border:none;padding:0;margin:0 6px;outline:none;
+  width:120px;height:120px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.bottom-btn img{ width:72px; height:72px; object-fit:contain; }
+
+/* small devices tweak */
+@media (max-width:420px){
+  #KALAL_ICON{ width:48px;height:48px;}
+  #KALAL_NAME{ font-size:18px; left:64px; top:16px;}
+  #VIEWERS_TEXT{ font-size:18px; }
+  #COMMENTS_UI{ font-size:24px; bottom:130px; }
+  .bottom-btn{ width:96px; height:96px; }
+  .bottom-btn img{ width:64px; height:64px; }
 }
 
-/* PARPADEO */
-.blink {
-    animation: blink 1.2s infinite;
-}
-@keyframes blink {
-    0% { opacity: 1; }
-    50% { opacity: 0.4; }
-    100% { opacity: 1; }
-}
-
-/* COMENTARIOS */
-#comments {
-    position: fixed;
-    bottom: 140px;
-    left: 10px;
-    width: 90%;
-    color: white;
-    font-size: 26px;
-    line-height: 32px;
-    z-index: 20;
-}
-
-/* BOTONES */
-#controls {
-    position: fixed;
-    bottom: 40px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 0px;
-    z-index: 15;
-}
-#controls img {
-    width: 120px;
-}
-
-/* ====== CANVAS OCULTO PARA GRABAR ====== */
-#recordCanvas {
-    display: none !important;
+/* === CANVAS RECORD (hidden, never visible) === */
+#recordCanvas{
+  display:none !important;
+  position:fixed !important;
+  width:0 !important; height:0 !important; opacity:0 !important; pointer-events:none !important;
 }
