@@ -1,303 +1,147 @@
-/* script.js - canvas recording + camera switching without stopping recording
-   Required icons folder: /icons (KALAL.png, EYE.png, LIVE.png, REC.png, CAM.png, HEART.png)
-*/
-(async function(){
-  const video = document.getElementById('video');
-  const recBtn = document.getElementById('recBtn');
-  const camBtn = document.getElementById('camBtn');
-  const heartBtn = document.getElementById('heartBtn');
+/* ELEMENTOS */
+const video = document.getElementById("video");
+const canvas = document.getElementById("recordCanvas");
+const ctx = canvas.getContext("2d");
 
-  // create visible canvas to show final image (and also used for recording)
-  const canvas = document.createElement('canvas');
-  canvas.id = 'canvasOverlay';
-  canvas.style.position = 'absolute';
-  canvas.style.top = '0';
-  canvas.style.left = '0';
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-  canvas.style.zIndex = '1';
-  canvas.style.pointerEvents = 'none';
-  document.body.appendChild(canvas);
+const recButton = document.getElementById("recButton");
+const switchCam = document.getElementById("switchCam");
+const likeButton = document.getElementById("likeButton");
+const liveBadge = document.getElementById("liveBadge");
 
-  // hide the raw video element (we use it as source only)
-  video.style.display = 'none';
+let currentCam = "environment";
+let isRecording = false;
+let recorder;
+let chunks = [];
+let stream;
 
-  const ctx = canvas.getContext('2d');
+/* COMENTARIOS */
+const commentsBox = document.getElementById("comments");
+const sampleComments = [
+    "رائد: استمر", "سيف: أحسنت", "علي: ممتاز", "كريم: عمل رائع",
+    "يوسف: استمر", "مروان: ممتاز", "هيثم: جميل جدا"
+];
+const emojis = ["🔥", "👍"];
 
-  let usingFront = false;
-  let currentVideoStream = null;
-  let micStream = null;
-  let recording = false;
-  let recorder = null;
-  let chunks = [];
+/* INICIAR CÁMARA */
+async function startCamera() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
 
-  let blink = true;
-  let blinkInterval = null;
+    stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: currentCam },
+        audio: true
+    });
 
-  // load images
-  const loadImage = src => new Promise((res, rej) => {
-    const img = new Image();
-    img.onload = () => res(img);
-    img.onerror = rej;
-    img.src = src;
-  });
+    video.srcObject = stream;
 
-  const icons = {};
-  async function preloadIcons() {
-    const names = {k:'icons/KALAL.png', e:'icons/EYE.png', l:'icons/LIVE.png', r:'icons/REC.png', c:'icons/CAM.png', h:'icons/HEART.png'};
-    for (const k of Object.keys(names)) {
-      try { icons[k] = await loadImage(names[k]); } catch(e){ console.warn('icon missing', names[k]); icons[k]=null; }
+    /* Si estamos grabando, actualizar la pista de vídeo sin parar el recorder */
+    if (isRecording && recorder && recorder.state === "recording") {
+        const newTrack = stream.getVideoTracks()[0];
+        const sender = recorder.stream.getVideoTracks()[0];
+
+        recorder.stream.removeTrack(sender);
+        recorder.stream.addTrack(newTrack);
     }
-  }
-  await preloadIcons();
+}
 
-  // comments sample (arabic supportive)
-  const arabicNames = ['رائد','سيف','علي','مروان','كريم','هيثم','وليد','يوسف'];
-  const msgs = ['استمر','ممتاز','عمل رائع','أحسنت','جيد جداً'];
-  function randomComment() {
-    const name = arabicNames[Math.floor(Math.random()*arabicNames.length)];
-    const text = msgs[Math.floor(Math.random()*msgs.length)];
-    // 40% chance reaction
-    const r = Math.random();
-    const react = r < 0.4 ? (Math.random()<0.5? ' 👍':' 🔥') : '';
-    return {user:name, text: text + react};
-  }
+startCamera();
 
-  let comments = [];
-  function addComment() {
-    comments.push(randomComment());
-    if (comments.length>8) comments.shift();
-    // also update visual comments DOM (optional)
-    refreshCommentsDOM();
-  }
-  function refreshCommentsDOM(){
-    const container = document.getElementById('comments');
-    if(!container) return;
-    container.innerHTML = '';
-    const slice = comments.slice(-6);
-    // draw from oldest at top to newest at bottom (so they appear to rise)
-    for (let i = slice.length-1; i>=0; i--){
-      const c = slice[i];
-      const d = document.createElement('div');
-      d.className = 'comment';
-      d.textContent = `${c.user}: ${c.text}`;
-      container.appendChild(d);
+/* AÑADIR COMENTARIOS AUTOMÁTICOS */
+setInterval(() => {
+    const base = sampleComments[Math.floor(Math.random()*sampleComments.length)];
+    const emoji = Math.random() < 0.4 ? emojis[Math.floor(Math.random()*emojis.length)] : "";
+    const final = `${base} ${emoji}`.trim();
+
+    const div = document.createElement("div");
+    div.textContent = final;
+    commentsBox.appendChild(div);
+
+    if (commentsBox.children.length > 5) {
+        commentsBox.removeChild(commentsBox.children[0]);
     }
-  }
+}, 1500);
 
-  // viewers growth
-  let viewers = 50604;
-  setInterval(()=>{ viewers = Math.floor(viewers * 1.006); document.getElementById('viewers').textContent = viewers.toLocaleString() + ' viewers'; }, 2000);
-  // initial display
-  document.getElementById('viewers').textContent = viewers.toLocaleString() + ' viewers';
+/* DIBUJAR FRAME EN CANVAS */
+function drawFrame() {
+    if (!isRecording) return;
 
-  // CAMERA
-  async function startCamera(front=false, withAudio=false) {
-    // stop previous video tracks
-    if (currentVideoStream) {
-      currentVideoStream.getTracks().forEach(t => t.stop());
-      currentVideoStream = null;
-    }
-    const constraints = { video: { facingMode: front ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } };
-    if (withAudio) constraints.audio = true;
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    // if withAudio, store mic stream but stop its video tracks
-    if (withAudio && !micStream) {
-      micStream = stream;
-      micStream.getVideoTracks().forEach(t=>t.stop());
-    } else {
-      // use video-only stream for preview
-      const vTracks = stream.getVideoTracks();
-      const vStream = new MediaStream(vTracks);
-      currentVideoStream = vStream;
-      video.srcObject = vStream;
-      await video.play().catch(()=>{});
-    }
-    // update DOM indicator for camera icon if needed (not required)
-  }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-  // start initial camera (rear) with microphone
-  await startCamera(false, true);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // create recording stream when needed: combine canvas video + mic audio
-  function createRecorder() {
-    const canvasStream = canvas.captureStream(30);
-    let combinedStream;
-    if (micStream && micStream.getAudioTracks().length>0) {
-      combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...micStream.getAudioTracks()]);
-    } else {
-      combinedStream = canvasStream;
-    }
-    const options = { mimeType: 'video/webm;codecs=vp9' };
-    try {
-      recorder = new MediaRecorder(combinedStream, options);
-    } catch(e){
-      recorder = new MediaRecorder(combinedStream);
-    }
-    recorder.ondataavailable = e => { if (e.data && e.data.size>0) chunks.push(e.data); };
-    recorder.onstop = async () => {
-      const blob = new Blob(chunks, { type: 'video/webm' });
-      chunks = [];
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'stream_recording.webm';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    };
-    return recorder;
-  }
+    const scale = canvas.width / window.innerWidth;
 
-  // handle REC button
-  recBtn.addEventListener('click', async ()=>{
-    if (!recording) {
-      // start recording
-      chunks = [];
-      createRecorder();
-      recorder.start();
-      recording = true;
-      if (!blinkInterval) blinkInterval = setInterval(()=> blink = !blink, 700);
-      recBtn.classList.add('recording');
-      document.getElementById('live-badge').style.visibility = 'visible';
-    } else {
-      // stop recording
-      recording = false;
-      if (recorder && recorder.state !== 'inactive') recorder.stop();
-      if (blinkInterval) { clearInterval(blinkInterval); blinkInterval=null; blink=true; }
-      recBtn.classList.remove('recording');
-      document.getElementById('live-badge').style.visibility = 'hidden';
-    }
-  });
-
-  // handle camera switch (does NOT stop recording)
-  camBtn.addEventListener('click', async ()=>{
-    usingFront = !usingFront;
-    // request only video so micStream stays intact
-    const constraints = { video: { facingMode: usingFront ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    // stop old video tracks
-    if (currentVideoStream) currentVideoStream.getTracks().forEach(t=>t.stop());
-    // set new video stream
-    const vTracks = stream.getVideoTracks();
-    const vStream = new MediaStream(vTracks);
-    currentVideoStream = vStream;
-    video.srcObject = vStream;
-    await video.play().catch(()=>{});
-  });
-
-  // draw loop - draw video + overlays into canvas (so exported video matches on-screen)
-  function resizeCanvas() {
-    const ratio = window.devicePixelRatio || 1;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    canvas.width = Math.floor(w * ratio);
-    canvas.height = Math.floor(h * ratio);
-    canvas.style.width = w+'px';
-    canvas.style.height = h+'px';
-    ctx.setTransform(ratio,0,0,ratio,0,0);
-  }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
-
-  function roundRect(ctx, x, y, w, h, r, fill, stroke) {
-    if (typeof r === 'undefined') r = 5;
-    if (typeof stroke === 'undefined') stroke = true;
-    if (typeof r === 'number') {
-      r = {tl: r, tr: r, br: r, bl: r};
-    } else {
-      var defaultRadius = {tl: 0, tr: 0, br: 0, bl: 0};
-      for (var side in defaultRadius) r[side] = r[side] || defaultRadius[side];
-    }
-    ctx.beginPath();
-    ctx.moveTo(x + r.tl, y);
-    ctx.lineTo(x + w - r.tr, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r.tr);
-    ctx.lineTo(x + w, y + h - r.br);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
-    ctx.lineTo(x + r.bl, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r.bl);
-    ctx.lineTo(x, y + r.tl);
-    ctx.quadraticCurveTo(x, y, x + r.tl, y);
-    ctx.closePath();
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
-  }
-
-  function drawFrame(){
-    // clear
-    ctx.clearRect(0,0,canvas.width, canvas.height);
-    // draw video scaled to full canvas
-    try { ctx.drawImage(video, 0, 0, canvas.width/(window.devicePixelRatio||1), canvas.height/(window.devicePixelRatio||1)); } catch(e){}
-
-    // top-left icon + username
-    const padding = 12;
-    const iconSize = 56;
-    const xIcon = padding;
-    const yIcon = padding;
-    if (icons.k) ctx.drawImage(icons.k, xIcon, yIcon, iconSize, iconSize);
-    ctx.fillStyle = 'white';
-    ctx.font = '22px sans-serif';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('KALAL_Y', xIcon + iconSize + 8, yIcon + iconSize/2);
-
-    // viewers: eye + number under
-    if (icons.e) ctx.drawImage(icons.e, xIcon, yIcon + iconSize + 8, 28, 20);
-    ctx.font = '29px sans-serif'; // slightly smaller as requested
-    ctx.fillStyle = 'white';
-    ctx.fillText(viewers.toLocaleString() + ' viewers', xIcon + 40, yIcon + iconSize + 24);
-
-    // LIVE badge top-right (blinking when recording)
-    if (recording && blink) {
-      const badgeW = 200;
-      const badgeH = 46;
-      const bx = window.innerWidth - badgeW - 8; // 8px from right
-      const by = 6; // 6px top
-      ctx.fillStyle = '#b92f2f';
-      roundRect(ctx, bx, by, badgeW, badgeH, 12, true, false);
-      ctx.fillStyle = 'white';
-      ctx.font = '20px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('LIVE STREAMING', bx + badgeW/2, by + badgeH/2);
-      ctx.textAlign = 'start';
+    function icon(id, x, y, w) {
+        const img = document.getElementById(id);
+        if (!img.complete) return;
+        ctx.drawImage(img, x * scale, y * scale, w * scale, w * scale);
     }
 
-    // comments (from bottom-left upward)
-    const commentStartY = window.innerHeight - 150;
-    ctx.font = '36px "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = 'white';
-    ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 2;
-    ctx.shadowBlur = 6;
-    let y = commentStartY;
-    const slice = comments.slice(-6);
-    for (let i = slice.length-1;i>=0;i--){
-      const c = slice[i];
-      ctx.fillText(c.user + ': ' + c.text, 18, y);
-      y -= 46;
-    }
-    ctx.shadowColor = 'transparent';
+    /* USER ICON */
+    icon("userIcon", 6, 6, 58);
 
-    // bottom controls (centered)
-    const bottomY = window.innerHeight - 110;
-    const centerX = window.innerWidth/2;
-    const spacing = 120;
-    if (icons.r) ctx.drawImage(icons.r, centerX - spacing, bottomY, 100, 100);
-    if (icons.c) ctx.drawImage(icons.c, centerX, bottomY, 100, 100);
-    if (icons.h) ctx.drawImage(icons.h, centerX + spacing, bottomY, 100, 100);
+    ctx.fillStyle = "white";
+    ctx.font = `${19 * scale}px Arial`;
+    ctx.fillText("KALAL_Y", 72 * scale, 35 * scale);
+
+    icon("eyeIcon", 72, 48, 28);
+    ctx.font = `${17 * scale}px Arial`;
+    ctx.fillText(document.getElementById("viewersCount").innerText,
+        106 * scale, 68 * scale);
+
+    if (isRecording) {
+        ctx.fillStyle = "#d22";
+        ctx.fillRect(canvas.width - (160 * scale), 6 * scale, 150 * scale, 40 * scale);
+        ctx.fillStyle = "white";
+        ctx.font = `${18 * scale}px Arial`;
+        ctx.fillText("LIVE STREAMING",
+            canvas.width - (150 * scale),
+            33 * scale
+        );
+    }
 
     requestAnimationFrame(drawFrame);
-  }
+}
 
-  // periodic comments generation
-  setInterval(()=>{ addComment(); }, 2200);
+/* GRABAR */
+recButton.onclick = () => {
+    if (!isRecording) {
+        chunks = [];
+        recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
 
-  requestAnimationFrame(drawFrame);
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = exportVideo;
 
-  // expose for debugging
-  window.__streaming = { startCamera, startRecording: ()=>recBtn.click() };
+        recorder.start();
+        isRecording = true;
 
-})();
+        liveBadge.style.opacity = 1;
+        liveBadge.classList.add("blink");
+
+        drawFrame();
+    } else {
+        isRecording = false;
+
+        liveBadge.style.opacity = 0;
+        liveBadge.classList.remove("blink");
+
+        recorder.stop();
+    }
+};
+
+/* EXPORTAR */
+function exportVideo() {
+    const blob = new Blob(chunks, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "stream.webm";
+    a.click();
+}
+
+/* CAMBIAR CÁMARA SIN CORTAR GRABACIÓN */
+switchCam.onclick = () => {
+    currentCam = currentCam === "environment" ? "user" : "environment";
+    startCamera();
+};
