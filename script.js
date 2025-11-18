@@ -111,11 +111,44 @@ recBtn.onclick = () => {
 /* =============================
    CAMBIAR CÁMARA
 ============================= */
-camBtn.onclick = async () => {
-    usingFront = !usingFront;
-    await startCamera();
-    // ⚠️ NO SE PARA LA GRABACIÓN, SE MANTIENE INTACTA
-};
+async function switchCamera() {
+    try {
+        // Cambiar entre cámara frontal y trasera
+        usingFrontCamera = !usingFrontCamera;
+
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: usingFrontCamera ? "user" : "environment" },
+            audio: true
+        });
+
+        const newVideoTrack = newStream.getVideoTracks()[0];
+
+        // SI ESTÁ GRABANDO → sustituimos solo el track de vídeo sin parar la grabación
+        if (recording && mediaRecorder && mediaRecorder.state === "recording") {
+            const sender = stream
+                .getTracks()
+                .find(track => track.kind === "video")
+                .applyConstraints;
+
+            // Reemplazar track sin detener el recorder
+            const oldTrack = stream.getVideoTracks()[0];
+            stream.removeTrack(oldTrack);
+            stream.addTrack(newVideoTrack);
+
+            // Refrescar el video mostrado
+            video.srcObject = null;
+            video.srcObject = stream;
+
+        } else {
+            // NO está grabando → reemplazar stream completo
+            stream.getTracks().forEach(t => t.stop());
+            stream = newStream;
+            video.srcObject = stream;
+        }
+    } catch (err) {
+        console.error("Error cambiando cámara:", err);
+    }
+}
 
 /* =============================
    COMENTARIOS
