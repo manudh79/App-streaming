@@ -2,55 +2,52 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-  <title>Live Overlay - Demo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Live Overlay</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <!-- Hidden real <video> that receives the camera stream -->
-    <video id="camVideo" autoplay playsinline muted></video>
+  <!-- hidden video (source for canvas) -->
+  <video id="video" autoplay playsinline muted></video>
 
-    <!-- Visible canvas: we draw the video + overlays here and record canvas -->
-    <canvas id="overlayCanvas"></canvas>
-
-    <!-- TOP LEFT OVERLAY: user icon + username -->
-    <div id="top-left">
-      <img id="icon-kalal" src="icons/KALAL.png" alt="user" />
-      <!-- If user decided icon already contains name, we show only icon. Keep span in case -->
-      <span id="kalal-name">KALAL_Y</span>
-      <div id="viewers-row">
-        <img id="eye-icon" src="icons/EYE.png" alt="eye" />
-        <span id="viewers-count">50,000 viewers</span>
-      </div>
+  <!-- Visible UI (kept for user reference) - canvas will draw same overlay so exported video coincide -->
+  <!-- top left -->
+  <div id="top-left" class="top-left">
+    <img id="icon-user" src="icons/KALAL.png" alt="user icon" />
+    <div id="username" class="username">KALAL_Y</div>
+    <div class="viewers-row">
+      <img id="icon-eye" src="icons/EYE.png" alt="eye" />
+      <div id="viewers" class="viewers">50,604 viewers</div>
     </div>
-
-    <!-- TOP RIGHT: LIVE -->
-    <div id="top-right">
-      <img id="live-icon-img" src="icons/LIVE.png" alt="LIVE">
-    </div>
-
-    <!-- COMMENTS area is drawn on canvas but keep a small helper for accessibility -->
-    <div id="comments-helper" aria-hidden="true"></div>
-
-    <!-- BOTTOM CENTER CONTROLS (icons) -->
-    <div id="bottom-controls">
-      <button id="btn-rec" class="control-btn">
-        <img src="icons/REC.png" alt="rec">
-      </button>
-
-      <button id="btn-switch" class="control-btn">
-        <img src="icons/CAM.png" alt="switch cam">
-      </button>
-
-      <button id="btn-heart" class="control-btn">
-        <img src="icons/HEART.png" alt="heart">
-      </button>
-    </div>
-
-    <!-- hidden anchor used for download -->
-    <a id="downloadAnchor" style="display:none;"></a>
   </div>
+
+  <!-- LIVE badge top-right (visible) -->
+  <div id="live-badge" class="live-badge" aria-hidden="true">
+    <img src="icons/LIVE.png" alt="live" />
+  </div>
+
+  <!-- comments container (visual) -->
+  <div id="comments" class="comments" aria-hidden="true">
+    <!-- comments will be shown by script visually AND drawn to canvas to include in recording -->
+  </div>
+
+  <!-- bottom center controls (visual) -->
+  <div id="controls" class="controls">
+    <button id="recBtn" class="control rec" title="Record">
+      <img src="icons/REC.png" alt="rec" />
+    </button>
+
+    <button id="camBtn" class="control cam" title="Switch camera">
+      <img src="icons/CAM.png" alt="cam" />
+    </button>
+
+    <button id="heartBtn" class="control heart" title="Like">
+      <img src="icons/HEART.png" alt="heart" />
+    </button>
+  </div>
+
+  <!-- bottom system area (just styling placeholder like in screenshots) -->
+  <div id="bottom-placeholder" class="bottom-placeholder"></div>
 
   <script src="script.js"></script>
 </body>
