@@ -1,54 +1,47 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Live Overlay</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>App Streaming</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-  <!-- hidden video (source for canvas) -->
-  <video id="video" autoplay playsinline muted></video>
 
-  <!-- Visible UI (kept for user reference) - canvas will draw same overlay so exported video coincide -->
-  <!-- top left -->
-  <div id="top-left" class="top-left">
-    <img id="icon-user" src="icons/KALAL.png" alt="user icon" />
-    <div id="username" class="username">KALAL_Y</div>
-    <div class="viewers-row">
-      <img id="icon-eye" src="icons/EYE.png" alt="eye" />
-      <div id="viewers" class="viewers">50,604 viewers</div>
+    <!-- VIDEO -->
+    <video id="video" autoplay playsinline></video>
+
+    <!-- CANVAS OCULTO PARA GRABACIÓN -->
+    <canvas id="recordCanvas" style="display:none !important;"></canvas>
+
+    <!-- CABECERA: ICONO USER -->
+    <img id="userIcon" class="icon" src="icons/KALAL.png" alt="User Icon" />
+
+    <!-- USERNAME -->
+    <div id="username">KALAL_Y</div>
+
+    <!-- VIEWERS -->
+    <div id="viewersContainer">
+        <img id="eyeIcon" class="iconSmall" src="icons/EYE.png" />
+        <span id="viewersCount">51,928 viewers</span>
     </div>
-  </div>
 
-  <!-- LIVE badge top-right (visible) -->
-  <div id="live-badge" class="live-badge" aria-hidden="true">
-    <img src="icons/LIVE.png" alt="live" />
-  </div>
+    <!-- LIVE STREAMING -->
+    <div id="liveBadge">LIVE STREAMING</div>
 
-  <!-- comments container (visual) -->
-  <div id="comments" class="comments" aria-hidden="true">
-    <!-- comments will be shown by script visually AND drawn to canvas to include in recording -->
-  </div>
+    <!-- COMENTARIOS -->
+    <div id="comments"></div>
 
-  <!-- bottom center controls (visual) -->
-  <div id="controls" class="controls">
-    <button id="recBtn" class="control rec" title="Record">
-      <img src="icons/REC.png" alt="rec" />
-    </button>
+    <!-- BOTÓN REC -->
+    <img id="recButton" class="bottomIcon" src="icons/REC.png" />
 
-    <button id="camBtn" class="control cam" title="Switch camera">
-      <img src="icons/CAM.png" alt="cam" />
-    </button>
+    <!-- CAMBIO CÁMARA -->
+    <img id="switchCam" class="bottomIcon" src="icons/CAM.png" />
 
-    <button id="heartBtn" class="control heart" title="Like">
-      <img src="icons/HEART.png" alt="heart" />
-    </button>
-  </div>
+    <!-- LIKE -->
+    <img id="likeButton" class="bottomIcon" src="icons/HEART.png" />
 
-  <!-- bottom system area (just styling placeholder like in screenshots) -->
-  <div id="bottom-placeholder" class="bottom-placeholder"></div>
-
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
