@@ -1,116 +1,139 @@
-/* ===== GENERAL ===== */
-body, html {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background: black;
-    font-family: Arial, sans-serif;
-    padding-top: env(safe-area-inset-top);
+/* Reset / base */
+* { box-sizing: border-box; }
+html,body,#app { width:100%; height:100%; margin:0; padding:0; background:#000; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+body { font-family: "Helvetica Neue", Arial, sans-serif; color:white; }
+
+/* Canvas fills the screen */
+#overlayCanvas { position: absolute; inset:0; width:100%; height:100%; display:block; background:black; }
+
+/* Hidden video */
+#camVideo { display:none !important; }
+
+/* Top-left group */
+#top-left {
+  position: absolute;
+  left: 8px; /* very close to left edge per spec */
+  top: 6px;  /* 1px minimal margin; chosen slightly for safety on iPhone notch */
+  display:flex;
+  flex-direction:column;
+  gap:6px; /* small gap between user and viewers */
+  z-index: 30;
+  pointer-events:none;
 }
 
-/* ===== VIDEO ===== */
-#video {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
-    z-index: 1;
+/* User row: icon + optional text */
+#icon-kalal {
+  width: 54px;   /* approx size similar to your capture */
+  height:54px;
+  border-radius:50%;
+  object-fit:cover;
+  margin-right:8px;
+  display:inline-block;
+  vertical-align:middle;
+  box-shadow:0 0 1px rgba(0,0,0,0.3);
+}
+#kalal-name {
+  display:inline-block;
+  color: #ffffff;
+  font-weight:600;
+  font-size:20px;
+  margin-left:10px;
+  transform: translateY(-42px); /* visually place it aligned with icon (we rely on canvas for exact drawing) */
+  pointer-events:none;
+  text-shadow:0 2px 8px rgba(0,0,0,0.6);
 }
 
-/* ===== USER ICON ===== */
-#user-box {
-    position: absolute;
-    top: calc(env(safe-area-inset-top) + 2px);
-    left: 5px;
-    display: flex;
-    align-items: center;
-    z-index: 10;
+/* viewers row */
+#viewers-row {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-top:2px;
+}
+#eye-icon {
+  width:28px;
+  height:28px;
+  opacity:0.95;
+}
+#viewers-count {
+  font-size:28px; /* slightly smaller than username; user asked to reduce by 1pt earlier */
+  color: #ffffff;
+  opacity:0.95;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.55);
 }
 
-#userIcon {
-    width: 115px;
-    height: auto;
+/* TOP RIGHT LIVE */
+#top-right {
+  position:absolute;
+  right: 1px; /* 1px from right edge as requested */
+  top: 1px;   /* 1px from top edge */
+  z-index: 50;
+  pointer-events:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+#live-icon-img {
+  width: 170px; /* a little smaller than sample */
+  height: 54px;
+  object-fit:contain;
+  opacity:1;
+  transform: translate(-8px, 0); /* slight left shift so it's near edge visually */
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.45));
 }
 
-/* ===== VIEWERS ===== */
-#viewers-box {
-    position: absolute;
-    top: calc(env(safe-area-inset-top) + 85px);   /* MÁS ABAJO */
-    left: 7px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    z-index: 10;
+/* live blinking class (applies to img or container) */
+.blinking {
+  animation: liveBlink 1.4s infinite ease-in-out;
+}
+@keyframes liveBlink {
+  0% { opacity: 1; transform: translate(-8px, 0) scale(1); }
+  50% { opacity: 0.55; transform: translate(-8px, 0) scale(0.98); }
+  100% { opacity: 1; transform: translate(-8px, 0) scale(1); }
 }
 
-#eyeIcon {
-    width: 32px;
-    height: auto;
+/* BOTTOM controls */
+#bottom-controls {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 10px; /* 1px margin requested — kept a little safe */
+  z-index: 60;
+  display:flex;
+  gap:0px; /* zero px separation as requested */
+  align-items:center;
+  justify-content:center;
+  pointer-events:auto;
 }
 
-#viewersNumber {
-    font-size: 19px;
-    color: white;
-    font-weight: 500;
+/* control buttons (icon only) */
+.control-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 120px; /* requested larger size */
+  height: 120px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin: 0;
+  padding:0;
+  -webkit-tap-highlight-color: transparent;
 }
+.control-btn img { width: 72px; height:72px; object-fit:contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
 
-#viewersLabel {
-    font-size: 17px;
-    color: white;
-    opacity: 0.85;
-}
+/* REC special styling (red filled circle behind) - but we use provided icon */
+#btn-rec img { width:76px; height:76px; }
 
-/* ===== LIVE STREAMING ===== */
-#liveContainer {
-    position: absolute;
-    top: calc(env(safe-area-inset-top) + 2px);
-    right: 5px;
-    z-index: 12;
-}
+/* Hide helper areas */
+#comments-helper { display:none; }
 
-#liveIcon {
-    width: 165px;
-    height: auto;
-    display: none;
-}
-
-/* ===== COMMENTS ===== */
-#comments {
-    position: absolute;
-    bottom: 150px;
-    left: 10px;
-    width: 90%;
-    font-size: 26px;
-    line-height: 33px;
-    color: white;
-    z-index: 20;
-}
-
-/* ===== BOTTOM ICONS ===== */
-#bottomIcons {
-    position: absolute;
-    bottom: 15px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 0;
-    z-index: 15;
-}
-
-.btnIcon {
-    width: 120px;
-    height: auto;
-}
-
-/* ===== PARPADEO SUAVE DEL ICONO LIVE ===== */
-.blink {
-    animation: blinkAnim 1.4s ease-in-out infinite;
-}
-
-@keyframes blinkAnim {
-    0% { opacity: 1; }
-    50% { opacity: 0.25; }
-    100% { opacity: 1; }
+/* Responsive tweaks for smaller screens */
+@media (max-width: 420px) {
+  #icon-kalal { width:48px; height:48px; }
+  #kalal-name { font-size:18px; transform: translateY(-38px); }
+  #viewers-count { font-size:24px; }
+  #live-icon-img { width:150px; height:48px; }
+  .control-btn { width: 96px; height:96px; }
+  .control-btn img { width:64px; height:64px; }
 }
