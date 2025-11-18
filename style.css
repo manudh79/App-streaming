@@ -1,116 +1,168 @@
-/* ===== GENERAL ===== */
-body, html {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background: black;
-    font-family: Arial, sans-serif;
-    padding-top: env(safe-area-inset-top);
+/* style.css - (contenido tal cual me lo pasaste) */
+:root {
+  --white: #ffffff;
+  --accent: #c22b2b;
+  --muted: rgba(255,255,255,0.85);
 }
 
-/* ===== VIDEO ===== */
-#video {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
-    z-index: 1;
+html,body{
+  margin:0;
+  padding:0;
+  height:100%;
+  background:#000;
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%;
+  overflow:hidden;
 }
 
-/* ===== USER ICON ===== */
-#user-box {
-    position: absolute;
-    top: calc(env(safe-area-inset-top) + 2px);
-    left: 5px;
-    display: flex;
-    align-items: center;
-    z-index: 10;
+video#video {
+  position:fixed;
+  top:0; left:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:0;
+  background:black;
 }
 
-#userIcon {
-    width: 115px;
-    height: auto;
+/* top-left user + viewers */
+.top-left{
+  position:fixed;
+  top:6px; /* very small top margin as you requested */
+  left:6px;
+  z-index:10;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  align-items:flex-start;
+  pointer-events:none;
 }
 
-/* ===== VIEWERS ===== */
-#viewers-box {
-    position: absolute;
-    top: calc(env(safe-area-inset-top) + 85px);   /* MÁS ABAJO */
-    left: 7px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    z-index: 10;
+.top-left img#icon-user{
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  object-fit:cover;
+  margin-right:8px;
+  display:inline-block;
 }
 
-#eyeIcon {
-    width: 32px;
-    height: auto;
+.username{
+  font-size:22px;
+  color:var(--white);
+  font-weight:600;
+  margin-left:6px;
+  margin-top:-46px; /* keep it visually at the same line as icon (tweak if needed) */
+  pointer-events:none;
 }
 
-#viewersNumber {
-    font-size: 19px;
-    color: white;
-    font-weight: 500;
+/* viewers row */
+.viewers-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-left:6px;
+  margin-top:6px;
+}
+.viewers-row img{
+  width:28px;
+  height:22px;
+  opacity:0.95;
+}
+.viewers{
+  color:var(--white);
+  font-size:30px; /* user wanted it slightly smaller; adjust in JS if required */
+  margin-left:6px;
 }
 
-#viewersLabel {
-    font-size: 17px;
-    color: white;
-    opacity: 0.85;
+/* LIVE badge top-right */
+.live-badge{
+  position:fixed;
+  top:6px; /* 1px margin request already handled; keep small */
+  right:8px;
+  z-index:12;
+  pointer-events:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.live-badge img{
+  height:48px;
+  width:auto;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
 }
 
-/* ===== LIVE STREAMING ===== */
-#liveContainer {
-    position: absolute;
-    top: calc(env(safe-area-inset-top) + 2px);
-    right: 5px;
-    z-index: 12;
+/* comments */
+.comments{
+  position:fixed;
+  left:18px;
+  bottom:160px;
+  z-index:9;
+  width:60%;
+  pointer-events:none;
+}
+.comments .comment{
+  color:var(--white);
+  font-size:36px;
+  line-height:1.05;
+  margin-bottom:12px;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.6);
 }
 
-#liveIcon {
-    width: 165px;
-    height: auto;
-    display: none;
+/* controls bottom center */
+.controls{
+  position:fixed;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:60px;
+  z-index:11;
+  display:flex;
+  gap:0px; /* user wanted 0px gap between icons */
+  align-items:center;
+  justify-content:center;
+}
+.controls .control{
+  background:transparent;
+  border:none;
+  padding:0 22px;
+  cursor:pointer;
+  outline:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  -webkit-tap-highlight-color: transparent;
+}
+.controls .control img{
+  width:72px;  /* user requested larger icons, tweak if needed */
+  height:72px;
 }
 
-/* ===== COMMENTS ===== */
-#comments {
-    position: absolute;
-    bottom: 150px;
-    left: 10px;
-    width: 90%;
-    font-size: 26px;
-    line-height: 33px;
-    color: white;
-    z-index: 20;
+/* rec active small visual */
+.rec.recording img{
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
 }
 
-/* ===== BOTTOM ICONS ===== */
-#bottomIcons {
-    position: absolute;
-    bottom: 15px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 0;
-    z-index: 15;
+/* bottom placeholder (site chrome like in your screenshots) */
+.bottom-placeholder{
+  position:fixed;
+  left:0; right:0;
+  bottom:0;
+  height:84px;
+  z-index:3;
+  background:transparent;
 }
 
-.btnIcon {
-    width: 120px;
-    height: auto;
+/* canvas overlay (inserted by script) will be absolute full screen */
+#canvasOverlay{
+  z-index:2;
+  pointer-events:none;
 }
 
-/* ===== PARPADEO SUAVE DEL ICONO LIVE ===== */
-.blink {
-    animation: blinkAnim 1.4s ease-in-out infinite;
-}
-
-@keyframes blinkAnim {
-    0% { opacity: 1; }
-    50% { opacity: 0.25; }
-    100% { opacity: 1; }
+/* small responsive tweaks */
+@media (max-width:420px){
+  .comments{ left:14px; bottom:140px; width:68%; }
+  .comments .comment{ font-size:32px; }
+  .viewers{ font-size:26px; }
+  .controls .control img{ width:64px; height:64px; }
 }
