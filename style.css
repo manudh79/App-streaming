@@ -1,113 +1,116 @@
-/* === style.css (base: tus estilos originales, mantén tal cual) === */
-
-:root {
-  --white: #ffffff;
-  --accent: #d22;
+/* ===== GENERAL ===== */
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: black;
+    font-family: Arial, sans-serif;
+    padding-top: env(safe-area-inset-top);
 }
 
-/* base */
-html,body{margin:0;padding:0;height:100%;background:#000;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
-
-/* video (hidden visually, used as source) */
-#video{
-  position:fixed;
-  top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;
+/* ===== VIDEO ===== */
+#video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: 1;
 }
 
-/* USER ICON (top-left) */
-#KALAL_ICON{
-  position:fixed;
-  top:6px;
-  left:6px;
-  width:56px;
-  height:56px;
-  border-radius:50%;
-  z-index:30;
-  pointer-events:none;
+/* ===== USER ICON ===== */
+#user-box {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 2px);
+    left: 5px;
+    display: flex;
+    align-items: center;
+    z-index: 10;
 }
 
-/* USER NAME: positioned near icon but invisible if you want icon-only */
-#KALAL_NAME{
-  position:fixed;
-  top:18px;
-  left:72px;
-  color:var(--white);
-  font-size:20px;
-  font-weight:700;
-  z-index:30;
-  pointer-events:none;
+#userIcon {
+    width: 115px;
+    height: auto;
 }
 
-/* VIEWERS row (under user) */
-#VIEWERS_ROW{
-  position:fixed;
-  top:52px;
-  left:72px;
-  display:flex;
-  gap:8px;
-  align-items:center;
-  z-index:30;
-  pointer-events:none;
-}
-#EYE_ICON{ width:28px; height:22px; }
-#VIEWERS_TEXT{ color:var(--white); font-size:20px; }
-
-/* LIVE UI (top-right) */
-#LIVE_UI{
-  position:fixed;
-  top:6px;
-  right:6px;
-  z-index:40;
-  pointer-events:none;
-}
-#LIVE_IMG{ width:170px; height:auto; display:block; }
-
-/* blinking class */
-.blink{ animation: blinkAnim 1.4s ease-in-out infinite; }
-@keyframes blinkAnim { 0%{opacity:1} 50%{opacity:0.35} 100%{opacity:1} }
-
-/* COMMENTS (bottom-left) */
-#COMMENTS_UI{
-  position:fixed;
-  left:12px;
-  bottom:150px;
-  z-index:25;
-  color:var(--white);
-  font-size:28px;
-  line-height:34px;
-  pointer-events:none;
+/* ===== VIEWERS ===== */
+#viewers-box {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 85px);   /* MÁS ABAJO */
+    left: 7px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
 }
 
-/* BOTTOM ICONS (centered) */
-#BOTTOM_ICONS{
-  position:fixed;
-  left:50%;
-  transform:translateX(-50%);
-  bottom:40px;
-  z-index:35;
-  display:flex;
-  gap:0px;
-  pointer-events:auto;
-}
-.bottom-btn{
-  background:transparent;border:none;padding:0;margin:0 6px;outline:none;
-  width:120px;height:120px;display:flex;align-items:center;justify-content:center;cursor:pointer;
-}
-.bottom-btn img{ width:72px; height:72px; object-fit:contain; }
-
-/* small devices tweak */
-@media (max-width:420px){
-  #KALAL_ICON{ width:48px;height:48px;}
-  #KALAL_NAME{ font-size:18px; left:64px; top:16px;}
-  #VIEWERS_TEXT{ font-size:18px; }
-  #COMMENTS_UI{ font-size:24px; bottom:130px; }
-  .bottom-btn{ width:96px; height:96px; }
-  .bottom-btn img{ width:64px; height:64px; }
+#eyeIcon {
+    width: 32px;
+    height: auto;
 }
 
-/* === CANVAS RECORD (hidden, never visible) === */
-#recordCanvas{
-  display:none !important;
-  position:fixed !important;
-  width:0 !important; height:0 !important; opacity:0 !important; pointer-events:none !important;
+#viewersNumber {
+    font-size: 19px;
+    color: white;
+    font-weight: 500;
+}
+
+#viewersLabel {
+    font-size: 17px;
+    color: white;
+    opacity: 0.85;
+}
+
+/* ===== LIVE STREAMING ===== */
+#liveContainer {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 2px);
+    right: 5px;
+    z-index: 12;
+}
+
+#liveIcon {
+    width: 165px;
+    height: auto;
+    display: none;
+}
+
+/* ===== COMMENTS ===== */
+#comments {
+    position: absolute;
+    bottom: 150px;
+    left: 10px;
+    width: 90%;
+    font-size: 26px;
+    line-height: 33px;
+    color: white;
+    z-index: 20;
+}
+
+/* ===== BOTTOM ICONS ===== */
+#bottomIcons {
+    position: absolute;
+    bottom: 15px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    z-index: 15;
+}
+
+.btnIcon {
+    width: 120px;
+    height: auto;
+}
+
+/* ===== PARPADEO SUAVE DEL ICONO LIVE ===== */
+.blink {
+    animation: blinkAnim 1.4s ease-in-out infinite;
+}
+
+@keyframes blinkAnim {
+    0% { opacity: 1; }
+    50% { opacity: 0.25; }
+    100% { opacity: 1; }
 }
