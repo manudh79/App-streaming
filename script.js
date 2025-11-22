@@ -8,106 +8,146 @@ const liveIcon = document.getElementById("liveIcon");
 const commentsBox = document.getElementById("comments");
 const viewersNumber = document.getElementById("viewersNumber");
 
-let currentStream = null;
-let recordingStream = null;      // Stream que se graba
+// Canvas OCULTO que ya tienes en el HTML
+const recordCanvas = document.getElementById("recordCanvas");
+const ctx = recordCanvas.getContext("2d");
+
+let videoStream = null;   // solo vídeo
+let audioStream = null;   // solo audio
 let mediaRecorder = null;
 let recordedChunks = [];
 let usingFront = false;
 let isRecording = false;
 
-video.muted = true; // evitamos el eco pero se graba sonido
+video.muted = true; // no eco en preview
 
 /* ============================================
-   INICIAR CÁMARA — SOLO VÍDEO, SIN CANVAS
+   INICIAR CÁMARA (VÍDEO SOLO)
 ============================================ */
-async function startCamera() {
-    // Si ya existe un stream, lo paramos
-    if (currentStream) {
-        currentStream.getTracks().forEach(t => t.stop());
+async function startVideoStream() {
+    if (videoStream) {
+        videoStream.getTracks().forEach(t => t.stop());
     }
 
-    // Pedimos cámara nativa
-    currentStream = await navigator.mediaDevices.getUserMedia({
+    videoStream = await navigator.mediaDevices.getUserMedia({
         video: {
             facingMode: usingFront ? "user" : "environment",
-            width: { ideal: 1080 },
-            height: { ideal: 1920 }
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
         },
-        audio: true
+        audio: false
     });
 
-    // Mostramos en pantalla
-    video.srcObject = currentStream;
+    video.srcObject = videoStream;
+    await video.play();
+}
 
-    // Sacamos la nueva pista de vídeo
-    const newVideoTrack = currentStream.getVideoTracks()[0];
-    const newAudioTrack = currentStream.getAudioTracks()[0];
+/* AUDIO SEPARADO (NO TOCAR NUNCA PARA EVITAR CORTES) */
+async function ensureAudioStream() {
+    if (!audioStream) {
+        audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true
+            },
+            video: false
+        });
+    }
+}
 
-    // Primera vez
-    if (!recordingStream) {
-        recordingStream = new MediaStream([newVideoTrack, newAudioTrack]);
+startVideoStream().catch(err => {
+    console.error("Error iniciando vídeo:", err);
+    alert("Activa permisos de cámara");
+});
+
+/* ============================================
+   LOOP DE DIBUJO AL CANVAS (SOLO VÍDEO)
+============================================ */
+function drawToCanvas() {
+    if (!isRecording) return;
+
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+
+    if (!vw || !vh) {
+        requestAnimationFrame(drawToCanvas);
         return;
     }
 
-    // Si ya está entrando en MediaRecorder, sustituimos la pista
-    const oldVideoTrack = recordingStream.getVideoTracks()[0];
+    // Queremos SALIDA VERTICAL SIEMPRE
+    const isFrameVertical = vh >= vw;
 
-    recordingStream.removeTrack(oldVideoTrack);
-    recordingStream.addTrack(newVideoTrack);
+    if (isFrameVertical) {
+        // Frame ya viene vertical (ej. 1080x1920)
+        recordCanvas.width = vw;
+        recordCanvas.height = vh;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(video, 0, 0, recordCanvas.width, recordCanvas.height);
+    } else {
+        // Frame ancho (ej. 1920x1080) → giramos 90º para tener vídeo vertical
+        recordCanvas.width = vh;
+        recordCanvas.height = vw;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.save();
+        ctx.translate(recordCanvas.width, 0);
+        ctx.rotate(Math.PI / 2);
+        ctx.drawImage(video, 0, 0, vw, vh);
+        ctx.restore();
+    }
 
-    // NO paramos oldVideoTrack → evita que se corte la grabación
+    // NO DIBUJAMOS OVERLAY AQUÍ → VÍDEO LIMPIO
+    requestAnimationFrame(drawToCanvas);
 }
 
-startCamera();
-
 /* ============================================
-   GRABACIÓN: SOLO STREAM NATIVO
+   EMPEZAR / PARAR GRABACIÓN
 ============================================ */
 recBtn.onclick = () => {
     if (!isRecording) startRecording();
     else stopRecording();
 };
 
-function startRecording() {
+async function startRecording() {
+    await ensureAudioStream();
+
     recordedChunks = [];
     isRecording = true;
 
-    /* ————————————————
-       TRUCO PARA FORZAR VERTICAL:
-       Creamos un nuevo MediaStream y marcamos
-       la pista de vídeo como "portrait".
-       Safari usa esto para grabar vertical.
-    ———————————————— */
+    // Stream del canvas a 30fps
+    const canvasStream = recordCanvas.captureStream(30);
 
-    const videoTrack = recordingStream.getVideoTracks()[0];
-    const audioTrack = recordingStream.getAudioTracks()[0];
-
-    try {
-        videoTrack.applyConstraints({
-            width: { ideal: 1080 },
-            height: { ideal: 1920 },
-            aspectRatio: 9/16
-        });
-    } catch(e) {
-        console.log("Safari ignoró las constraints (normal).");
+    // Añadimos SOLO el audio del micro
+    const audioTrack = audioStream.getAudioTracks()[0];
+    if (audioTrack) {
+        canvasStream.addTrack(audioTrack);
     }
 
-    // MediaRecorder directamente del stream nativo
-    mediaRecorder = new MediaRecorder(recordingStream, {
-        mimeType: "video/webm;codecs=vp9",
-        videoBitsPerSecond: 6_000_000
+    // MediaRecorder alta calidad WEBM
+    let options = {};
+    if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
+        options.mimeType = "video/webm;codecs=vp9";
+    } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
+        options.mimeType = "video/webm;codecs=vp8";
+    } else {
+        options.mimeType = "video/webm";
+    }
+
+    mediaRecorder = new MediaRecorder(canvasStream, {
+        ...options,
+        videoBitsPerSecond: 10_000_000 // pedimos buen bitrate
     });
 
     mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
+        if (e.data && e.data.size > 0) recordedChunks.push(e.data);
     };
 
     mediaRecorder.onstop = saveRecording;
 
     mediaRecorder.start(200);
-
     liveIcon.style.display = "block";
     liveIcon.classList.add("blink");
+
+    requestAnimationFrame(drawToCanvas);
 }
 
 function stopRecording() {
@@ -115,42 +155,38 @@ function stopRecording() {
     liveIcon.style.display = "none";
     liveIcon.classList.remove("blink");
 
-    mediaRecorder.stop();
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+    }
 }
 
 /* ============================================
-   GUARDAR WEBM VERTICAL
+   GUARDAR ARCHIVO
 ============================================ */
 function saveRecording() {
-    const blob = new Blob(recordedChunks, { type: "video/webm" });
-    const url = URL.createObjectURL(blob);
+    const blob = new Blob(recordedChunks, {
+        type: recordedChunks[0]?.type || "video/webm"
+    });
 
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "stream_vertical.webm";
+    a.download = "kalal_vertical_clean.webm";
     a.click();
-
     URL.revokeObjectURL(url);
 }
 
 /* ============================================
-   CAMBIAR CÁMARA SIN CORTAR
+   CAMBIAR CÁMARA SIN CORTAR GRABACIÓN
 ============================================ */
 camBtn.onclick = async () => {
     usingFront = !usingFront;
-    await startCamera();
-
-    if (isRecording && mediaRecorder.state === "recording") {
-        // Minipausa para evitar tirones
-        mediaRecorder.pause();
-        setTimeout(() => {
-            mediaRecorder.resume();
-        }, 100);
-    }
+    // Solo cambiamos el vídeo de la preview; el recorder sigue con el canvas
+    await startVideoStream();
 };
 
 /* ============================================
-   COMENTARIOS
+   COMENTARIOS EN ÁRABE (SOLO UI)
 ============================================ */
 const names = ["علي","رائد","سيف","مروان","كريم","هيثم"];
 const texts = ["استمر", "أبدعت", "عمل رائع", "جميل", "ممتاز"];
@@ -159,22 +195,21 @@ const emojis = ["🔥","👍"];
 function addComment() {
     const name = names[Math.floor(Math.random()*names.length)];
     const msg  = texts[Math.floor(Math.random()*texts.length)];
-    const emoji = Math.random() < 0.4 ? emojis[Math.floor(Math.random()*2)] : "";
+    const emoji = Math.random() < 0.4 ? emojis[Math.floor(Math.random()*emojis.length)] : "";
 
     const div = document.createElement("div");
     div.className = "comment";
     div.textContent = `${name}: ${msg} ${emoji}`;
 
     commentsBox.appendChild(div);
-
-    if (commentsBox.children.length > 6)
+    if (commentsBox.children.length > 6) {
         commentsBox.removeChild(commentsBox.children[0]);
+    }
 }
-
 setInterval(addComment, 2200);
 
 /* ============================================
-   VIEWERS
+   VIEWERS (SOLO UI)
 ============================================ */
 let viewers = 52380;
 setInterval(() => {
