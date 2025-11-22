@@ -1,157 +1,116 @@
-/* ==== BASE ==== */
-* {
-  box-sizing: border-box;
-}
-html,
-body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: #000;
-  color: #fff;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial,
-    sans-serif;
-  overflow: hidden;
+/* ===== GENERAL ===== */
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: black;
+    font-family: Arial, sans-serif;
+    padding-top: env(safe-area-inset-top);
 }
 
-/* ==== VÍDEO EN DIRECTO ==== */
-#liveVideo {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  object-fit: cover;
-  z-index: 1;
+/* ===== VIDEO ===== */
+#video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: 1;
 }
 
-/* ==== TOP LEFT: USER + VIEWERS ==== */
-#topLeft {
-  position: fixed;
-  top: 18px;
-  left: 12px;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+/* ===== USER ICON ===== */
+#user-box {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 2px);
+    left: 5px;
+    display: flex;
+    align-items: center;
+    z-index: 10;
 }
 
 #userIcon {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
+    width: 115px;
+    height: auto;
 }
 
-#viewersRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* ===== VIEWERS ===== */
+#viewers-box {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 85px);   /* MÁS ABAJO */
+    left: 7px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
 }
 
 #eyeIcon {
-  width: 28px;
-  height: auto;
+    width: 32px;
+    height: auto;
 }
 
-#viewersText {
-  font-size: 18px;
+#viewersNumber {
+    font-size: 19px;
+    color: white;
+    font-weight: 500;
 }
 
-/* ==== LIVE PILL TOP RIGHT ==== */
-#livePill {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 5;
-  display: none; /* sólo visible grabando */
+#viewersLabel {
+    font-size: 17px;
+    color: white;
+    opacity: 0.85;
+}
+
+/* ===== LIVE STREAMING ===== */
+#liveContainer {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 2px);
+    right: 5px;
+    z-index: 12;
 }
 
 #liveIcon {
-  width: 160px;
-  height: auto;
+    width: 165px;
+    height: auto;
+    display: none;
 }
 
-/* Parpadeo suave */
-.blink {
-  animation: blinkAnim 1.4s ease-in-out infinite;
-}
-@keyframes blinkAnim {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.25;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-/* ==== COMENTARIOS ABAJO IZQUIERDA ==== */
+/* ===== COMMENTS ===== */
 #comments {
-  position: fixed;
-  left: 14px;
-  bottom: 150px;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 4px;
-  font-size: 22px;
-  line-height: 28px;
-}
-#comments .comment {
-  white-space: nowrap;
+    position: absolute;
+    bottom: 150px;
+    left: 10px;
+    width: 90%;
+    font-size: 26px;
+    line-height: 33px;
+    color: white;
+    z-index: 20;
 }
 
-/* ==== BARRA INFERIOR ==== */
-#bottomBar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 24px;
-  z-index: 6;
-  display: flex;
-  justify-content: center;
-  gap: 0;
-  align-items: center;
+/* ===== BOTTOM ICONS ===== */
+#bottomIcons {
+    position: absolute;
+    bottom: 15px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    z-index: 15;
 }
 
-.iconBtn {
-  background: none;
-  border: none;
-  padding: 0 12px;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.btnIcon {
+    width: 120px;
+    height: auto;
 }
 
-#recIcon,
-#camIcon,
-#heartIcon {
-  width: 120px;
-  height: 120px;
-  object-fit: contain;
+/* ===== PARPADEO SUAVE DEL ICONO LIVE ===== */
+.blink {
+    animation: blinkAnim 1.4s ease-in-out infinite;
 }
 
-/* Ajustes móviles pequeños */
-@media (max-width: 420px) {
-  #userIcon {
-    width: 56px;
-    height: 56px;
-  }
-  #viewersText {
-    font-size: 16px;
-  }
-  #comments {
-    font-size: 18px;
-    bottom: 135px;
-  }
-  #recIcon,
-  #camIcon,
-  #heartIcon {
-    width: 96px;
-    height: 96px;
-  }
+@keyframes blinkAnim {
+    0% { opacity: 1; }
+    50% { opacity: 0.25; }
+    100% { opacity: 1; }
 }
