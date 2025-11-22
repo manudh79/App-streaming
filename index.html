@@ -1,47 +1,41 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>KALAL Stream</title>
-    <link rel="stylesheet" href="style.css?v=1001">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>KALAL Stream</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
+  <div id="app">
 
-    <!-- CÁMARA -->
+    <!-- VIDEO REAL EN PANTALLA -->
     <video id="video" autoplay playsinline muted></video>
 
-    <!-- CANVAS OCULTO PARA GRABAR MODO A -->
-    <canvas id="recordCanvas" style="display:none;"></canvas>
-
-    <!-- USUARIO -->
-    <div id="user-box">
-        <img id="userIcon" src="icons/KALAL.png">
-    </div>
+    <!-- ICONO USUARIO -->
+    <img id="userIcon" src="icons/KALAL.png" />
 
     <!-- VIEWERS -->
-    <div id="viewers-box">
-        <img id="eyeIcon" src="icons/EYE.png">
-        <span id="viewersNumber">51,824</span>
-        <span id="viewersLabel">viewers</span>
-    </div>
+    <img id="eyeIcon" src="icons/EYE.png" />
+    <div id="viewersNumber">51.824</div>
+    <div id="viewersLabel">viewers</div>
 
     <!-- LIVE STREAMING -->
-    <div id="liveContainer">
-        <img id="liveIcon" src="icons/LIVE.png">
-    </div>
+    <img id="liveIcon" src="icons/LIVE.png" style="display:none;" />
 
     <!-- COMENTARIOS -->
-    <div id="comments"></div>
+    <div id="commentsBox"></div>
 
-    <!-- CONTROLES INFERIORES -->
-    <div id="bottomIcons">
-        <img class="btnIcon" id="recBtn" src="icons/REC.png">
-        <img class="btnIcon" id="camBtn" src="icons/CAM.png">
-        <img class="btnIcon" id="heartBtn" src="icons/HEART.png">
+    <!-- ICONOS INFERIORES -->
+    <div id="bottomBar">
+      <img id="recBtn" src="icons/REC.png" />
+      <img id="camBtn" src="icons/CAM.png" />
+      <img id="heartBtn" src="icons/HEART.png" />
     </div>
 
-<script src="script.js?v=1001" defer></script>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
