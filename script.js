@@ -1,126 +1,183 @@
+/* ============================================
+   ELEMENTOS
+============================================ */
 const video = document.getElementById("video");
 const recBtn = document.getElementById("recBtn");
 const camBtn = document.getElementById("camBtn");
 const liveIcon = document.getElementById("liveIcon");
+const commentsBox = document.getElementById("comments");
 const viewersNumber = document.getElementById("viewersNumber");
-const commentsBox = document.getElementById("commentsBox");
 
-let currentFacingMode = "environment";
+let currentStream = null;
+let recordingStream = null;      // Stream que se graba
 let mediaRecorder = null;
-let chunks = [];
+let recordedChunks = [];
+let usingFront = false;
 let isRecording = false;
-let stream = null;
 
-/* -------------- INICIAR CÁMARA -------------- */
+video.muted = true; // evitamos el eco pero se graba sonido
 
+/* ============================================
+   INICIAR CÁMARA — SOLO VÍDEO, SIN CANVAS
+============================================ */
 async function startCamera() {
-  if (stream) {
-    stream.getTracks().forEach(t => t.stop());
-  }
+    // Si ya existe un stream, lo paramos
+    if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+    }
 
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: currentFacingMode,
-      width: { ideal: 1080 },
-      height: { ideal: 1920 }
-    },
-    audio: true
-  });
+    // Pedimos cámara nativa
+    currentStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+            facingMode: usingFront ? "user" : "environment",
+            width: { ideal: 1080 },
+            height: { ideal: 1920 }
+        },
+        audio: true
+    });
 
-  video.srcObject = stream;
+    // Mostramos en pantalla
+    video.srcObject = currentStream;
+
+    // Sacamos la nueva pista de vídeo
+    const newVideoTrack = currentStream.getVideoTracks()[0];
+    const newAudioTrack = currentStream.getAudioTracks()[0];
+
+    // Primera vez
+    if (!recordingStream) {
+        recordingStream = new MediaStream([newVideoTrack, newAudioTrack]);
+        return;
+    }
+
+    // Si ya está entrando en MediaRecorder, sustituimos la pista
+    const oldVideoTrack = recordingStream.getVideoTracks()[0];
+
+    recordingStream.removeTrack(oldVideoTrack);
+    recordingStream.addTrack(newVideoTrack);
+
+    // NO paramos oldVideoTrack → evita que se corte la grabación
 }
 
 startCamera();
 
-/* -------------- CAMBIAR CÁMARA SIN PARAR GRABACIÓN -------------- */
-
-camBtn.addEventListener("click", async () => {
-  currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
-  await startCamera();
-
-  if (isRecording) {
-    mediaRecorder.pause();
-    mediaRecorder.resume();
-  }
-});
-
-/* -------------- EMPEZAR / PARAR GRABACIÓN -------------- */
-
-recBtn.addEventListener("click", () => {
-  if (!isRecording) startRecording();
-  else stopRecording();
-});
+/* ============================================
+   GRABACIÓN: SOLO STREAM NATIVO
+============================================ */
+recBtn.onclick = () => {
+    if (!isRecording) startRecording();
+    else stopRecording();
+};
 
 function startRecording() {
-  if (!stream) return;
+    recordedChunks = [];
+    isRecording = true;
 
-  chunks = [];
-  isRecording = true;
+    /* ————————————————
+       TRUCO PARA FORZAR VERTICAL:
+       Creamos un nuevo MediaStream y marcamos
+       la pista de vídeo como "portrait".
+       Safari usa esto para grabar vertical.
+    ———————————————— */
 
-  mediaRecorder = new MediaRecorder(stream, {
-    mimeType: "video/webm;codecs=vp9",
-    videoBitsPerSecond: 6000000  // calidad alta
-  });
+    const videoTrack = recordingStream.getVideoTracks()[0];
+    const audioTrack = recordingStream.getAudioTracks()[0];
 
-  mediaRecorder.ondataavailable = e => {
-    if (e.data.size > 0) chunks.push(e.data);
-  };
+    try {
+        videoTrack.applyConstraints({
+            width: { ideal: 1080 },
+            height: { ideal: 1920 },
+            aspectRatio: 9/16
+        });
+    } catch(e) {
+        console.log("Safari ignoró las constraints (normal).");
+    }
 
-  mediaRecorder.onstop = saveRecording;
+    // MediaRecorder directamente del stream nativo
+    mediaRecorder = new MediaRecorder(recordingStream, {
+        mimeType: "video/webm;codecs=vp9",
+        videoBitsPerSecond: 6_000_000
+    });
 
-  mediaRecorder.start(100);
-  liveIcon.style.display = "block";
-  blinkLive();
+    mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = saveRecording;
+
+    mediaRecorder.start(200);
+
+    liveIcon.style.display = "block";
+    liveIcon.classList.add("blink");
 }
 
 function stopRecording() {
-  isRecording = false;
-  liveIcon.style.display = "none";
-  mediaRecorder.stop();
+    isRecording = false;
+    liveIcon.style.display = "none";
+    liveIcon.classList.remove("blink");
+
+    mediaRecorder.stop();
 }
 
+/* ============================================
+   GUARDAR WEBM VERTICAL
+============================================ */
 function saveRecording() {
-  const blob = new Blob(chunks, { type: "video/webm" });
-  const url = URL.createObjectURL(blob);
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "kalal_stream.webm";
-  a.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "stream_vertical.webm";
+    a.click();
 
-  URL.revokeObjectURL(url);
+    URL.revokeObjectURL(url);
 }
 
-/* -------------- PARPADEO LIVE STREAMING -------------- */
+/* ============================================
+   CAMBIAR CÁMARA SIN CORTAR
+============================================ */
+camBtn.onclick = async () => {
+    usingFront = !usingFront;
+    await startCamera();
 
-function blinkLive() {
-  if (!isRecording) return;
-  liveIcon.style.opacity = liveIcon.style.opacity === "0.2" ? "1" : "0.2";
-  setTimeout(blinkLive, 500);
+    if (isRecording && mediaRecorder.state === "recording") {
+        // Minipausa para evitar tirones
+        mediaRecorder.pause();
+        setTimeout(() => {
+            mediaRecorder.resume();
+        }, 100);
+    }
+};
+
+/* ============================================
+   COMENTARIOS
+============================================ */
+const names = ["علي","رائد","سيف","مروان","كريم","هيثم"];
+const texts = ["استمر", "أبدعت", "عمل رائع", "جميل", "ممتاز"];
+const emojis = ["🔥","👍"];
+
+function addComment() {
+    const name = names[Math.floor(Math.random()*names.length)];
+    const msg  = texts[Math.floor(Math.random()*texts.length)];
+    const emoji = Math.random() < 0.4 ? emojis[Math.floor(Math.random()*2)] : "";
+
+    const div = document.createElement("div");
+    div.className = "comment";
+    div.textContent = `${name}: ${msg} ${emoji}`;
+
+    commentsBox.appendChild(div);
+
+    if (commentsBox.children.length > 6)
+        commentsBox.removeChild(commentsBox.children[0]);
 }
 
-/* -------------- COMENTARIOS EN ÁRABE -------------- */
+setInterval(addComment, 2200);
 
-const arabicUsers = ["علي","سيف","مروان","نور","هاشم","سارة","مريم"];
-const arabicMsgs = ["استمر","عمل رائع","قوة","نحن معك","لا تتوقف","ممتاز"];
-
+/* ============================================
+   VIEWERS
+============================================ */
+let viewers = 52380;
 setInterval(() => {
-  const name = arabicUsers[Math.floor(Math.random()*arabicUsers.length)];
-  const msg = arabicMsgs[Math.floor(Math.random()*arabicMsgs.length)];
-  const emoji = Math.random() < 0.4 ? (Math.random() < 0.5 ? "🔥" : "👍") : "";
-
-  const el = document.createElement("div");
-  el.textContent = `${name}: ${msg} ${emoji}`;
-  commentsBox.appendChild(el);
-
-  if (commentsBox.children.length > 5)
-    commentsBox.removeChild(commentsBox.children[0]);
-}, 2000);
-
-/* -------------- VIEWERS AUTO -------------- */
-
-let viewers = 51824;
-setInterval(() => {
-  viewers += Math.floor(Math.random()*15) + 5;
-  viewersNumber.textContent = viewers.toLocaleString("en-US");
-}, 2300);
+    viewers += Math.floor(Math.random() * 20);
+    viewersNumber.textContent = viewers.toLocaleString("en-US");
+}, 2500);
