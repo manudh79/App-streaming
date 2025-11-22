@@ -1,90 +1,116 @@
+/* ===== GENERAL ===== */
 body, html {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background: black;
-  height: 100%;
-  width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: black;
+    font-family: Arial, sans-serif;
+    padding-top: env(safe-area-inset-top);
 }
 
-#app {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-/* VIDEO A PANTALLA COMPLETA */
+/* ===== VIDEO ===== */
 #video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: 1;
 }
 
-/* ICONO USUARIO */
+/* ===== USER ICON ===== */
+#user-box {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 2px);
+    left: 5px;
+    display: flex;
+    align-items: center;
+    z-index: 10;
+}
+
 #userIcon {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 85px;
+    width: 115px;
+    height: auto;
 }
 
-/* VIEWERS */
+/* ===== VIEWERS ===== */
+#viewers-box {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 85px);   /* MÁS ABAJO */
+    left: 7px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
+}
+
 #eyeIcon {
-  position: absolute;
-  top: 95px;
-  left: 14px;
-  width: 28px;
+    width: 32px;
+    height: auto;
 }
 
 #viewersNumber {
-  position: absolute;
-  top: 92px;
-  left: 52px;
-  font-size: 19px;
-  color: white;
+    font-size: 19px;
+    color: white;
+    font-weight: 500;
 }
 
 #viewersLabel {
-  position: absolute;
-  top: 114px;
-  left: 52px;
-  font-size: 14px;
-  color: white;
+    font-size: 17px;
+    color: white;
+    opacity: 0.85;
 }
 
-/* LIVE STREAMING */
+/* ===== LIVE STREAMING ===== */
+#liveContainer {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 2px);
+    right: 5px;
+    z-index: 12;
+}
+
 #liveIcon {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 150px;
+    width: 165px;
+    height: auto;
+    display: none;
 }
 
-/* COMENTARIOS */
-#commentsBox {
-  position: absolute;
-  bottom: 150px;
-  left: 15px;
-  color: white;
-  font-size: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+/* ===== COMMENTS ===== */
+#comments {
+    position: absolute;
+    bottom: 150px;
+    left: 10px;
+    width: 90%;
+    font-size: 26px;
+    line-height: 33px;
+    color: white;
+    z-index: 20;
 }
 
-/* ICONOS INFERIORES */
-#bottomBar {
-  position: absolute;
-  bottom: 20px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  gap: 0px;
+/* ===== BOTTOM ICONS ===== */
+#bottomIcons {
+    position: absolute;
+    bottom: 15px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    z-index: 15;
 }
 
-#bottomBar img {
-  width: 120px;
+.btnIcon {
+    width: 120px;
+    height: auto;
+}
+
+/* ===== PARPADEO SUAVE DEL ICONO LIVE ===== */
+.blink {
+    animation: blinkAnim 1.4s ease-in-out infinite;
+}
+
+@keyframes blinkAnim {
+    0% { opacity: 1; }
+    50% { opacity: 0.25; }
+    100% { opacity: 1; }
 }
