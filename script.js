@@ -1,150 +1,197 @@
-// =========================
-// ELEMENTOS DOM
-// =========================
-const liveVideo = document.getElementById("liveVideo");
+/* =============================
+   ELEMENTOS DEL DOM
+============================= */
+const video = document.getElementById("video");
 const recBtn = document.getElementById("recBtn");
 const camBtn = document.getElementById("camBtn");
-const livePill = document.getElementById("livePill");
+const heartBtn = document.getElementById("heartBtn");
+
+const userIcon = document.getElementById("userIcon");
+const eyeIcon = document.getElementById("eyeIcon");
+const viewersNumber = document.getElementById("viewersNumber");
+const viewersLabel = document.getElementById("viewersLabel");
 const liveIcon = document.getElementById("liveIcon");
 const commentsBox = document.getElementById("comments");
-const viewersText = document.getElementById("viewersText");
 
-const rawPlayback = document.getElementById("rawPlayback");
-const mixCanvas = document.getElementById("mixCanvas");
-const mixCtx = mixCanvas.getContext("2d");
-
-// =========================
-// ESTADO CÁMARA / GRABACIÓN
-// =========================
-let currentStream = null;
+/* =============================
+   ESTADO
+============================= */
 let usingFront = false;
+let cameraStream = null;      // solo vídeo
+let micStream = null;         // solo audio
+let recorder = null;          // MediaRecorder del canvas
+let recording = false;
+let chunks = [];
 
-let camRecorder = null; // graba la cámara "limpia"
-let camChunks = [];
-let isRecording = false;
+let viewers = 51824;
 
-let viewersCount = 51824;
+/* =============================
+   CANVAS OCULTO PARA GRABAR
+============================= */
+const recordCanvas = document.createElement("canvas");
+recordCanvas.id = "recordCanvas";
+recordCanvas.style.display = "none";
+document.body.appendChild(recordCanvas);
+const ctx = recordCanvas.getContext("2d");
 
-// Para regenerar overlays en mezcla final
-let recordStartTime = 0;
-
-// =========================
-// INICIAR CÁMARA
-// =========================
+/* =============================
+   INICIAR CÁMARA (VÍDEO SOLAMENTE)
+============================= */
 async function startCamera() {
-  if (currentStream) {
-    currentStream.getTracks().forEach((t) => t.stop());
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
   }
 
-  const constraintPresets = [
-    { width: { ideal: 3840 }, height: { ideal: 2160 } },
-    { width: { ideal: 2560 }, height: { ideal: 1440 } },
-    { width: { ideal: 1920 }, height: { ideal: 1080 } },
-    { width: { ideal: 1280 }, height: { ideal: 720 } },
-  ];
+  // Pedimos buena resolución, el navegador elegirá lo máximo que pueda
+  const constraints = {
+    video: {
+      facingMode: usingFront ? "user" : "environment",
+      width: { ideal: 1920 },
+      height: { ideal: 1080 }
+    },
+    audio: false
+  };
 
-  let stream = null;
+  cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+  video.srcObject = cameraStream;
+  video.muted = true;
 
-  for (const preset of constraintPresets) {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: usingFront ? "user" : "environment",
-          ...preset,
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
-      break;
-    } catch (e) {
-      // probar siguiente resolución
+  await video.play();
+
+  // Cuando tengamos metadatos, ajustamos el canvas al tamaño real del vídeo
+  updateCanvasSize();
+}
+
+function updateCanvasSize() {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) return;
+
+  recordCanvas.width = vw;
+  recordCanvas.height = vh;
+}
+
+/* =============================
+   AUDIO (MIC SEPARADO, SIN ECO)
+============================= */
+async function getMicStream() {
+  if (!micStream) {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true
+      },
+      video: false
+    });
+  }
+  return micStream;
+}
+
+/* =============================
+   LOOP DE DIBUJO EN CANVAS
+   (LO QUE SE GRABA)
+============================= */
+function drawToCanvas() {
+  if (!recording) return;
+
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) {
+    requestAnimationFrame(drawToCanvas);
+    return;
+  }
+
+  // Aseguramos tamaño correcto por si cambió al girar/otra cámara
+  if (recordCanvas.width !== vw || recordCanvas.height !== vh) {
+    recordCanvas.width = vw;
+    recordCanvas.height = vh;
+  }
+
+  const cw = recordCanvas.width;
+  const ch = recordCanvas.height;
+
+  // Fondo: frame de cámara
+  ctx.drawImage(video, 0, 0, cw, ch);
+
+  // Mapeo de pantalla → canvas
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+  const scaleX = cw / winW;
+  const scaleY = ch / winH;
+
+  // Helper para dibujar un <img> DOM en la posición donde está en pantalla
+  function drawImgFromDom(el) {
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = r.left * scaleX;
+    const y = r.top * scaleY;
+    const w = r.width * scaleX;
+    const h = r.height * scaleY;
+    // Creamos un objeto Image usando el mismo src
+    const img = el._cachedImg || new Image();
+    if (!el._cachedImg) {
+      img.src = el.src;
+      el._cachedImg = img;
+    }
+    if (img.complete) {
+      ctx.drawImage(img, x, y, w, h);
     }
   }
 
-  if (!stream) {
-    alert("No se pudo acceder a la cámara.");
-    return;
+  // Helper para dibujar texto donde está el span
+  function drawTextFromDom(el) {
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const style = window.getComputedStyle(el);
+    const fontSizePx = parseFloat(style.fontSize) || 16;
+    const canvasFontSize = fontSizePx * scaleY;
+    ctx.font = `${canvasFontSize}px ${style.fontFamily || "Arial"}`;
+    ctx.fillStyle = style.color || "white";
+    ctx.textBaseline = "top";
+
+    const x = r.left * scaleX;
+    const y = r.top * scaleY;
+    ctx.fillText(el.textContent, x, y);
   }
 
-  currentStream = stream;
-  liveVideo.srcObject = stream;
-  liveVideo.muted = true;
-  liveVideo.volume = 0;
+  // === Dibujar overlays ===
+  drawImgFromDom(userIcon);
+  drawImgFromDom(eyeIcon);
+  drawTextFromDom(viewersNumber);
+  drawTextFromDom(viewersLabel);
 
-  await liveVideo.play();
+  if (liveIcon.style.display !== "none") {
+    drawImgFromDom(liveIcon);
+  }
+
+  // Comentarios (cada <div> dentro de #comments)
+  const commentNodes = Array.from(commentsBox.children);
+  commentNodes.forEach(div => drawTextFromDom(div));
+
+  // Iconos inferiores
+  drawImgFromDom(recBtn);
+  drawImgFromDom(camBtn);
+  drawImgFromDom(heartBtn);
+
+  requestAnimationFrame(drawToCanvas);
 }
 
-startCamera();
+/* =============================
+   INICIAR GRABACIÓN (CANVAS + AUDIO)
+============================= */
+async function startRecording() {
+  updateCanvasSize();
 
-// =========================
-// VIEWERS PROGRESIVOS
-// =========================
-setInterval(() => {
-  viewersCount += Math.floor(Math.random() * 20) + 5;
-  viewersText.textContent = viewersCount.toLocaleString("en-US") + " viewers";
-}, 2500);
-
-// =========================
-// COMENTARIOS EN ARABE (LIVE UI)
-// =========================
-const arabicNames = ["علي", "رائد", "سيف", "مروان", "كريم", "هيثم", "نور", "سارة"];
-const arabicMsgs = ["استمر", "أبدعت", "عمل رائع", "جميل جدا", "ممتاز", "لا تتوقف"];
-const emojis = ["🔥", "👍"];
-
-function randomComment() {
-  const name = arabicNames[Math.floor(Math.random() * arabicNames.length)];
-  const msg = arabicMsgs[Math.floor(Math.random() * arabicMsgs.length)];
-  const emoji = Math.random() < 0.4 ? emojis[Math.floor(Math.random() * emojis.length)] : "";
-  return `${name}: ${msg} ${emoji}`.trim();
-}
-
-function addLiveComment() {
-  const div = document.createElement("div");
-  div.className = "comment";
-  div.textContent = randomComment();
-  commentsBox.appendChild(div);
-  if (commentsBox.children.length > 5) {
-    commentsBox.removeChild(commentsBox.children[0]);
-  }
-}
-setInterval(addLiveComment, 2300);
-
-// =========================
-// BOTÓN CAMBIAR CÁMARA (NO CORTA RECODIFICACIÓN, SOLO CAMBIO EN DIRECTO)
-// =========================
-camBtn.addEventListener("click", async () => {
-  usingFront = !usingFront;
-  await startCamera();
-});
-
-// =========================
-// INICIAR GRABACIÓN CRUDA (SOLO CÁMARA)
-// =========================
-recBtn.addEventListener("click", () => {
-  if (!isRecording) {
-    startRawRecording();
-  } else {
-    stopRawRecording();
-  }
-});
-
-function startRawRecording() {
-  if (!currentStream) {
-    alert("No hay cámara disponible.");
-    return;
+  const canvasStream = recordCanvas.captureStream(30); // 30 fps deseados
+  const mic = await getMicStream();
+  const audioTrack = mic.getAudioTracks()[0];
+  if (audioTrack) {
+    canvasStream.addTrack(audioTrack);
   }
 
-  camChunks = [];
-  isRecording = true;
-  recordStartTime = performance.now();
+  chunks = [];
 
-  // icono LIVE visible y parpadeando
-  livePill.style.display = "block";
-  livePill.classList.add("blink");
-
-  const options = {};
+  let options = {};
   if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
     options.mimeType = "video/webm;codecs=vp9";
   } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
@@ -153,180 +200,103 @@ function startRawRecording() {
     options.mimeType = "video/webm";
   }
 
-  camRecorder = new MediaRecorder(currentStream, {
+  recorder = new MediaRecorder(canvasStream, {
     ...options,
-    videoBitsPerSecond: 12_000_000,
+    videoBitsPerSecond: 15_000_000 // pedimos bastante bitrate (el navegador puede limitarlo)
   });
 
-  camRecorder.ondataavailable = (e) => {
-    if (e.data && e.data.size > 0) camChunks.push(e.data);
+  recorder.ondataavailable = e => {
+    if (e.data.size > 0) chunks.push(e.data);
   };
 
-  camRecorder.onstop = async () => {
-    // Mezclar overlays en un segundo paso
-    const rawBlob = new Blob(camChunks, { type: camChunks[0]?.type || "video/webm" });
-    await mixOverlayWithRawVideo(rawBlob);
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: chunks[0]?.type || "video/webm" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "stream_recording.webm";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  camRecorder.start(100);
+  recorder.start(100);
+  recording = true;
+
+  // LIVE visible y parpadeando
+  liveIcon.style.display = "block";
+  liveIcon.classList.add("blink");
+
+  requestAnimationFrame(drawToCanvas);
 }
 
-// =========================
-// PARAR GRABACIÓN CRUDA
-// =========================
-function stopRawRecording() {
-  isRecording = false;
-  livePill.style.display = "none";
-  livePill.classList.remove("blink");
-  camRecorder.stop();
+/* =============================
+   PARAR GRABACIÓN
+============================= */
+function stopRecording() {
+  recording = false;
+  if (recorder && recorder.state !== "inactive") {
+    recorder.stop();
+  }
+  liveIcon.style.display = "none";
+  liveIcon.classList.remove("blink");
 }
 
-// =========================
-// MEZCLA FINAL: REPRODUCIR RAW + SUPERPONER OVERLAYS EN CANVAS
-// =========================
-async function mixOverlayWithRawVideo(rawBlob) {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(rawBlob);
-    rawPlayback.src = url;
-    rawPlayback.currentTime = 0;
-    rawPlayback.muted = true;
+/* =============================
+   BOTONES
+============================= */
+recBtn.addEventListener("click", () => {
+  if (!recording) startRecording();
+  else stopRecording();
+});
 
-    rawPlayback.onloadedmetadata = () => {
-      const w = rawPlayback.videoWidth || 1280;
-      const h = rawPlayback.videoHeight || 720;
-      mixCanvas.width = w;
-      mixCanvas.height = h;
+camBtn.addEventListener("click", async () => {
+  usingFront = !usingFront;
+  await startCamera();
+  // 🔹 El recorder NO se toca: sigue dibujando lo que vea en <video>,
+  // así que puedes cambiar de cámara sin cortar la grabación.
+});
 
-      const stream = mixCanvas.captureStream(30);
-      const mixedChunks = [];
+heartBtn.addEventListener("click", () => {
+  // Aquí podrías hacer animaciones futuras si quieres
+});
 
-      let options = {};
-      if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
-        options.mimeType = "video/webm;codecs=vp9";
-      } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
-        options.mimeType = "video/webm;codecs=vp8";
-      } else {
-        options.mimeType = "video/webm";
-      }
+/* =============================
+   COMENTARIOS EN ÁRABE
+============================= */
+const names = ["علي","رائد","سيف","مروان","كريم","هيثم","نور","سارة"];
+const texts = ["استمر", "أبدعت", "عمل رائع", "جميل جدا", "ممتاز", "لا تتوقف"];
+const emojis = ["🔥","👍"];
 
-      const mixRecorder = new MediaRecorder(stream, {
-        ...options,
-        videoBitsPerSecond: 12_000_000,
-      });
+function addComment() {
+  const name = names[Math.floor(Math.random() * names.length)];
+  const text = texts[Math.floor(Math.random() * texts.length)];
+  const hasEmoji = Math.random() < 0.4;
+  const emoji = hasEmoji ? " " + emojis[Math.floor(Math.random() * emojis.length)] : "";
 
-      mixRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) mixedChunks.push(e.data);
-      };
+  const div = document.createElement("div");
+  div.className = "comment";
+  div.textContent = `${name}: ${text}${emoji}`;
 
-      mixRecorder.onstop = () => {
-        const finalBlob = new Blob(mixedChunks, { type: mixedChunks[0]?.type || "video/webm" });
-        const finalUrl = URL.createObjectURL(finalBlob);
-        const a = document.createElement("a");
-        a.href = finalUrl;
-        a.download = "stream_overlay.webm";
-        a.click();
-        URL.revokeObjectURL(finalUrl);
-        URL.revokeObjectURL(url);
-        resolve();
-      };
-
-      // Estado para comentarios en mezcla (cronología propia)
-      const mixComments = [];
-      let nextCommentTime = 0;
-      const commentInterval = 2.3; // segundos entre comentarios
-
-      // viewers base para mezcla
-      let baseViewers = viewersCount;
-
-      function drawMixFrame() {
-        // si se ha parado
-        if (rawPlayback.ended || rawPlayback.currentTime >= rawPlayback.duration) {
-          mixRecorder.stop();
-          return;
-        }
-
-        const t = rawPlayback.currentTime; // segundos desde inicio mezcla
-        mixCtx.drawImage(rawPlayback, 0, 0, w, h);
-
-        // Escalas relativas (para que funcione en 16:9, 19.5:9, etc.)
-        const rel = {
-          userX: 0.03 * w,
-          userY: 0.03 * h,
-          userSize: 0.1 * h, // tamaño relativo
-
-          viewersX: 0.03 * w + 0.11 * h,
-          viewersY: 0.04 * h,
-          eyeW: 0.035 * w,
-
-          liveW: 0.28 * w,
-          liveH: 0.08 * h,
-          liveX: w - 0.03 * w - 0.28 * w,
-          liveY: 0.03 * h,
-        };
-
-        // Icono usuario
-        const userImg = document.getElementById("userIcon");
-        mixCtx.drawImage(userImg, rel.userX, rel.userY, rel.userSize, rel.userSize);
-
-        // Viewers (ojo + texto)
-        const eyeImg = document.getElementById("eyeIcon");
-        mixCtx.drawImage(eyeImg, rel.viewersX, rel.viewersY, rel.eyeW, rel.eyeW);
-
-        const viewersForTime = baseViewers + Math.floor(t * 12);
-        mixCtx.font = `${Math.round(w * 0.022)}px Arial`;
-        mixCtx.fillStyle = "white";
-        mixCtx.textBaseline = "middle";
-        mixCtx.fillText(
-          viewersForTime.toLocaleString("en-US") + " viewers",
-          rel.viewersX + rel.eyeW + 0.012 * w,
-          rel.viewersY + rel.eyeW / 2
-        );
-
-        // LIVE pill parpadeando
-        const blinkOn = Math.floor(t * 2) % 2 === 0;
-        if (blinkOn) {
-          const liveImg = document.getElementById("liveIcon");
-          mixCtx.drawImage(liveImg, rel.liveX, rel.liveY, rel.liveW, rel.liveH);
-        }
-
-        // Generar comentarios en mezcla acorde al tiempo
-        while (t >= nextCommentTime) {
-          mixComments.push(randomComment());
-          if (mixComments.length > 5) mixComments.shift();
-          nextCommentTime += commentInterval;
-        }
-
-        // Pintar comentarios (bottom-left)
-        mixCtx.font = `${Math.round(w * 0.022)}px Arial`;
-        mixCtx.fillStyle = "white";
-        mixCtx.textBaseline = "alphabetic";
-        const lineHeight = Math.round(h * 0.04);
-        let startY = h - 0.20 * h;
-        for (let i = mixComments.length - 1, j = 0; i >= 0; i--, j++) {
-          const txt = mixComments[i];
-          mixCtx.fillText(txt, rel.userX, startY - j * lineHeight);
-        }
-
-        // Iconos inferiores
-        const recImg = document.getElementById("recIcon");
-        const camImg = document.getElementById("camIcon");
-        const heartImg = document.getElementById("heartIcon");
-
-        const barY = h - 0.14 * h;
-        const iconSize = 0.1 * h;
-        const centerX = w / 2;
-
-        mixCtx.drawImage(recImg, centerX - 1.1 * iconSize, barY, iconSize, iconSize);
-        mixCtx.drawImage(camImg, centerX - iconSize / 2, barY, iconSize, iconSize);
-        mixCtx.drawImage(heartImg, centerX + 0.6 * iconSize, barY, iconSize, iconSize);
-
-        requestAnimationFrame(drawMixFrame);
-      }
-
-      mixRecorder.start(100);
-      rawPlayback.play().then(() => {
-        requestAnimationFrame(drawMixFrame);
-      });
-    };
-  });
+  commentsBox.appendChild(div);
+  if (commentsBox.children.length > 5) {
+    commentsBox.removeChild(commentsBox.children[0]);
+  }
 }
+
+setInterval(addComment, 2300);
+
+/* =============================
+   VIEWERS AUTO + EXPONENCIAL
+============================= */
+setInterval(() => {
+  viewers += Math.floor(Math.random() * 25) + 5;
+  viewersNumber.textContent = viewers.toLocaleString("en-US");
+}, 2500);
+
+/* =============================
+   ARRANQUE INICIAL
+============================= */
+startCamera().catch(err => {
+  console.error("Error cámara:", err);
+  alert("Activa permisos de cámara y micrófono");
+});
