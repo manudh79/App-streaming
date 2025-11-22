@@ -75,56 +75,33 @@ function drawCanvasFrame() {
         return;
     }
 
-    // Ajustar canvas a resolución nativa de la cámara
-    canvas.width = vw;
-    canvas.height = vh;
+    // Detectar si el móvil está en vertical
+    const isVertical = window.innerHeight > window.innerWidth;
 
-    // --- Dibuja vídeo ---
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    if (isVertical) {
+        // VIDEO EN VERTICAL → ROTAR CANVAS 90°
+        canvas.width = vh;   // ancho final es la altura del vídeo
+        canvas.height = vw;  // alto final es la anchura del vídeo
 
-    // --- Obtener posiciones exactas desde la pantalla ---
-    const rectVideo = video.getBoundingClientRect();
+        ctx.save();
+        ctx.translate(canvas.width, 0);
+        ctx.rotate(Math.PI / 2);
 
-    function drawElement(id) {
-        const el = document.getElementById(id);
-        if (!el) return;
+        // Dibujar vídeo ya rotado
+        ctx.drawImage(video, 0, 0, vw, vh);
 
-        const r = el.getBoundingClientRect();
-        const x = (r.left - rectVideo.left) * (vw / rectVideo.width);
-        const y = (r.top - rectVideo.top) * (vh / rectVideo.height);
-        const w = r.width * (vw / rectVideo.width);
-        const h = r.height * (vh / rectVideo.height);
+        // Dibujar overlays (rotados también)
+        drawOverlayRotated();
+        ctx.restore();
 
-        if (el.tagName === "IMG") {
-            ctx.drawImage(el, x, y, w, h);
-        } else {
-            ctx.font = `${h * 0.8}px Arial`;
-            ctx.fillStyle = "white";
-            ctx.fillText(el.innerText, x, y + h);
-        }
+    } else {
+        // HORIZONTAL NORMAL
+        canvas.width = vw;
+        canvas.height = vh;
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        drawOverlayNormal();
     }
-
-    // Overlays principales
-    drawElement("userIcon");
-    drawElement("eyeIcon");
-    drawElement("viewersNumber");
-    drawElement("viewersLabel");
-    if (liveIcon.style.display !== "none") drawElement("liveIcon");
-
-    // Comentarios
-    Array.from(commentsBox.children).forEach(comment => {
-        const r = comment.getBoundingClientRect();
-        const x = (r.left - rectVideo.left) * (vw / rectVideo.width);
-        const y = (r.top - rectVideo.top) * (vh / rectVideo.height);
-        ctx.font = `${r.height * (vw / rectVideo.width) * 0.75}px Arial`;
-        ctx.fillStyle = "white";
-        ctx.fillText(comment.innerText, x, y);
-    });
-
-    // Iconos inferiores
-    drawElement("recBtn");
-    drawElement("camBtn");
-    drawElement("heartBtn");
 
     requestAnimationFrame(drawCanvasFrame);
 }
@@ -222,3 +199,36 @@ setInterval(() => {
     viewers += Math.floor(Math.random() * 20);
     viewersNumber.textContent = viewers.toLocaleString("en-US");
 }, 2500);
+
+function drawOverlayNormal() {
+    drawElement("userIcon");
+    drawElement("eyeIcon");
+    drawElement("viewersNumber");
+    drawElement("viewersLabel");
+    if (liveIcon.style.display !== "none") drawElement("liveIcon");
+
+    // Comentarios
+    Array.from(commentsBox.children).forEach(comment => {
+        drawComment(comment);
+    });
+
+    drawElement("recBtn");
+    drawElement("camBtn");
+    drawElement("heartBtn");
+}
+
+function drawOverlayRotated() {
+    drawElementRotated("userIcon");
+    drawElementRotated("eyeIcon");
+    drawElementRotated("viewersNumber");
+    drawElementRotated("viewersLabel");
+    if (liveIcon.style.display !== "none") drawElementRotated("liveIcon");
+
+    Array.from(commentsBox.children).forEach(comment => {
+        drawCommentRotated(comment);
+    });
+
+    drawElementRotated("recBtn");
+    drawElementRotated("camBtn");
+    drawElementRotated("heartBtn");
+}
