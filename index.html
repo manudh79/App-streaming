@@ -1,39 +1,46 @@
-<!doctype html>
-<html lang="es">
+<!DOCTYPE html>
+<html lang="ar">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-  <title>Live Overlay</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stream</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Actual camera preview (hidden visually, used as source for canvas drawing) -->
-  <video id="video" autoplay playsinline muted></video>
 
-  <!-- UI real — lo que el usuario ve en pantalla (posiciones controladas por style.css) -->
-  <img id="KALAL_ICON" src="icons/KALAL.png" alt="user" />
-  <div id="KALAL_NAME">KALAL_Y</div>
+    <!-- VIDEO PRINCIPAL -->
+    <video id="video" autoplay playsinline></video>
 
-  <div id="VIEWERS_ROW">
-    <img id="EYE_ICON" src="icons/EYE.png" alt="viewers" />
-    <div id="VIEWERS_TEXT">50,604 viewers</div>
-  </div>
+    <!-- CANVAS OCULTO PARA GRABAR (NO SE VE) -->
+    <canvas id="recordCanvas" style="display:none;"></canvas>
 
-  <div id="LIVE_UI">
-    <img id="LIVE_IMG" src="icons/LIVE.png" alt="LIVE" />
-  </div>
+    <!-- ICONO USUARIO -->
+    <div id="user-box">
+        <img id="userIcon" src="icons/KALAL.png">
+    </div>
 
-  <div id="COMMENTS_UI" aria-hidden="true"></div>
+    <!-- VIEWERS -->
+    <div id="viewers-box">
+        <img id="eyeIcon" src="icons/EYE.png">
+        <span id="viewersNumber">51,824</span>
+        <span id="viewersLabel">viewers</span>
+    </div>
 
-  <div id="BOTTOM_ICONS">
-    <button id="REC_BTN" class="bottom-btn"><img src="icons/REC.png" alt="rec" /></button>
-    <button id="CAM_BTN" class="bottom-btn"><img src="icons/CAM.png" alt="cam" /></button>
-    <button id="HEART_BTN" class="bottom-btn"><img src="icons/HEART.png" alt="heart" /></button>
-  </div>
+    <!-- LIVE STREAMING -->
+    <div id="liveContainer">
+        <img id="liveIcon" src="icons/LIVE.png">
+    </div>
 
-  <!-- Hidden canvas used only to create the recorded stream (never shown) -->
-  <canvas id="recordCanvas" style="display:none !important;"></canvas>
+    <!-- COMENTARIOS -->
+    <div id="comments"></div>
 
-  <script src="script.js" defer></script>
+    <!-- BOTONES -->
+    <div id="bottomIcons">
+        <img id="recBtn" class="btnIcon" src="icons/REC.png">
+        <img id="camBtn" class="btnIcon" src="icons/CAM.png">
+        <img id="heartBtn" class="btnIcon" src="icons/HEART.png">
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
