@@ -19,113 +19,143 @@ let mediaRecorder = null;
 let recordedChunks = [];
 let isRecording = false;
 
+let videoReady = false;
+
 /* ============================
-   INICIAR CÁMARA
+   INICIAR CÁMARA (AUTODETECCIÓN HD/4K)
 ============================ */
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(t => t.stop());
     }
 
-    currentStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-            facingMode: usingFront ? "user" : "environment"
-        },
-        audio: true
+    // Resolutions to try, in order
+    const constraintsList = [
+        { width: { ideal: 3840 }, height: { ideal: 2160 } }, // 4K
+        { width: { ideal: 2560 }, height: { ideal: 1440 } }, // 2K
+        { width: { ideal: 1920 }, height: { ideal: 1080 } }, // FullHD
+        { width: { ideal: 1280 }, height: { ideal: 720 } },  // HD
+        { width: { ideal: 720 }, height: { ideal: 480 } }    // fallback
+    ];
+
+    let stream;
+
+    for (let c of constraintsList) {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: usingFront ? "user" : "environment",
+                    ...c
+                },
+                audio: true
+            });
+            break;
+        } catch (e) { continue; }
+    }
+
+    currentStream = stream;
+    video.srcObject = stream;
+
+    video.muted = true;
+    video.volume = 0;
+
+    // Esperar a que la cámara dé resolución real
+    await waitForVideoMetadata();
+
+    return stream;
+}
+
+/* ============================
+   ESPERAR RESOLUCIÓN REAL
+============================ */
+function waitForVideoMetadata() {
+    return new Promise(res => {
+        if (video.videoWidth > 0) {
+            videoReady = true;
+            return res();
+        }
+        video.onloadedmetadata = () => {
+            videoReady = true;
+            res();
+        };
     });
-
-    video.muted = true;       // evita eco
-    video.volume = 0;         // asegura silencio real
-    video.srcObject = currentStream;
-
-    return currentStream;
 }
 
 startCamera();
 
 /* ============================
-   FUNCIÓN PRINCIPAL DE DIBUJO (MODO A)
+   CANVAS DRAW LOOP (MODO A)
 ============================ */
 function drawToCanvas() {
-    if (!isRecording) return;
-
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
-
-    if (vw === 0 || vh === 0) {
+    if (!isRecording || !videoReady) {
         requestAnimationFrame(drawToCanvas);
         return;
     }
 
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+
     recordCanvas.width = vw;
     recordCanvas.height = vh;
 
-    // 1. Dibujar vídeo base
     ctx.drawImage(video, 0, 0, vw, vh);
 
-    // 2. Dibujar icono usuario
-    const user = document.getElementById("userIcon");
-    const ub = user.getBoundingClientRect();
-    ctx.drawImage(user, ub.left, ub.top, ub.width, ub.height);
-
-    // 3. Dibujar viewers
-    const eye = document.getElementById("eyeIcon");
-    const eb = eye.getBoundingClientRect();
-    ctx.drawImage(eye, eb.left, eb.top, eb.width, eb.height);
-
-    const vb = viewersNumber.getBoundingClientRect();
-    ctx.font = "19px Arial";
-    ctx.fillStyle = "white";
-    ctx.fillText(viewersNumber.textContent, vb.left, vb.top + vb.height - 5);
-
-    const viewersLabel = document.getElementById("viewersLabel");
-    const vlb = viewersLabel.getBoundingClientRect();
-    ctx.font = "17px Arial";
-    ctx.fillText(viewersLabel.textContent, vlb.left, vlb.top + vlb.height - 5);
-
-    // 4. Live Streaming
-    if (isRecording) {
-        const live = document.getElementById("liveIcon");
-        const lb = live.getBoundingClientRect();
-        ctx.drawImage(live, lb.left, lb.top, lb.width, lb.height);
+    function drawImageFromDOM(id) {
+        const el = document.getElementById(id);
+        const r = el.getBoundingClientRect();
+        ctx.drawImage(el, r.left, r.top, r.width, r.height);
     }
 
-    // 5. Comentarios
-    const children = Array.from(commentsBox.children);
+    // Overlays
+    drawImageFromDOM("userIcon");
+    drawImageFromDOM("eyeIcon");
+
+    // Viewers text
+    let vn = viewersNumber.getBoundingClientRect();
+    ctx.font = "19px Arial";
+    ctx.fillStyle = "white";
+    ctx.fillText(viewersNumber.textContent, vn.left, vn.top + vn.height - 6);
+
+    let vl = document.getElementById("viewersLabel").getBoundingClientRect();
+    ctx.font = "17px Arial";
+    ctx.fillText("viewers", vl.left, vl.top + vl.height - 6);
+
+    // Live icon
+    if (isRecording) {
+        drawImageFromDOM("liveIcon");
+    }
+
+    // Comentarios
+    const comments = Array.from(commentsBox.children);
     ctx.font = "26px Arial";
     ctx.fillStyle = "white";
 
-    children.forEach(el => {
-        const r = el.getBoundingClientRect();
-        ctx.fillText(el.textContent, r.left, r.top + 28);
+    comments.forEach(c => {
+        const r = c.getBoundingClientRect();
+        ctx.fillText(c.textContent, r.left, r.top + 26);
     });
 
-    // 6. Iconos inferiores
-    const rec = document.getElementById("recBtn").getBoundingClientRect();
-    ctx.drawImage(document.getElementById("recBtn"), rec.left, rec.top, rec.width, rec.height);
-
-    const cam = document.getElementById("camBtn").getBoundingClientRect();
-    ctx.drawImage(document.getElementById("camBtn"), cam.left, cam.top, cam.width, cam.height);
-
-    const heart = document.getElementById("heartBtn").getBoundingClientRect();
-    ctx.drawImage(document.getElementById("heartBtn"), heart.left, heart.top, heart.width, heart.height);
+    // Iconos inferiores
+    ["recBtn", "camBtn", "heartBtn"].forEach(id => {
+        drawImageFromDOM(id);
+    });
 
     requestAnimationFrame(drawToCanvas);
 }
 
 /* ============================
-   INICIAR GRABACIÓN (MODO A)
+   INICIAR GRABACIÓN
 ============================ */
 function startRecording() {
     isRecording = true;
+
     liveIcon.style.display = "block";
     liveIcon.classList.add("blink");
 
     recordedChunks = [];
 
-    const canvasStream = recordCanvas.captureStream(30); // 30fps
+    const canvasStream = recordCanvas.captureStream(30);
     const audioTrack = currentStream.getAudioTracks()[0];
-
     canvasStream.addTrack(audioTrack);
 
     mediaRecorder = new MediaRecorder(canvasStream, {
@@ -141,24 +171,21 @@ function startRecording() {
 }
 
 /* ============================
-   DETENER GRABACIÓN
+   DETENER
 ============================ */
 function stopRecording() {
     isRecording = false;
-
     liveIcon.style.display = "none";
     liveIcon.classList.remove("blink");
-
     mediaRecorder.stop();
 }
 
 /* ============================
-   GUARDAR ARCHIVO WEBM
+   GUARDAR WEBM
 ============================ */
 function saveRecording() {
     const blob = new Blob(recordedChunks, { type: "video/webm" });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
     a.download = "stream_recording.webm";
@@ -174,7 +201,7 @@ recBtn.onclick = () => {
 };
 
 /* ============================
-   CAMBIO DE CÁMARA
+   CAMBIO DE CÁMARA SIN CORTAR
 ============================ */
 camBtn.onclick = async () => {
     usingFront = !usingFront;
@@ -182,7 +209,7 @@ camBtn.onclick = async () => {
 };
 
 /* ============================
-   COMENTARIOS (tu versión)
+   COMENTARIOS ÁRABES
 ============================ */
 const names = ["علي","رائد","سيف","مروان","كريم","هيثم"];
 const texts = ["استمر", "أبدعت", "عمل رائع", "جميل", "ممتاز"];
@@ -196,7 +223,6 @@ function addComment() {
     const div = document.createElement("div");
     div.className = "comment";
     div.textContent = `${name}: ${msg} ${emoji}`;
-
     commentsBox.appendChild(div);
 
     if (commentsBox.children.length > 5) {
@@ -206,10 +232,10 @@ function addComment() {
 setInterval(addComment, 2200);
 
 /* ============================
-   VIEWERS (tu versión)
+   VIEWERS
 ============================ */
-let viewers = 51824;
+let views = 51824;
 setInterval(() => {
-    viewers += Math.floor(Math.random() * 25);
-    viewersNumber.textContent = viewers.toLocaleString("en-US");
+    views += Math.floor(Math.random() * 25);
+    viewersNumber.textContent = views.toLocaleString("en-US");
 }, 2500);
