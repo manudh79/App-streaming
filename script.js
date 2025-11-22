@@ -9,117 +9,165 @@ const commentsBox = document.getElementById("comments");
 const viewersNumber = document.getElementById("viewersNumber");
 
 let currentStream = null;
-let recordingStream = null;      // Stream que se graba
+let recordingStream = null;
 let mediaRecorder = null;
 let recordedChunks = [];
 let usingFront = false;
 let isRecording = false;
 
-video.muted = true; // evitamos el eco pero se graba sonido
+video.muted = true; // 🔇 SIN ECO, PERO SE GRABA AUDIO
 
 /* ============================================
-   INICIAR CÁMARA — SOLO VÍDEO, SIN CANVAS
+   INICIAR CÁMARA
 ============================================ */
 async function startCamera() {
-    // Si ya existe un stream, lo paramos
     if (currentStream) {
         currentStream.getTracks().forEach(t => t.stop());
     }
 
-    // Pedimos cámara nativa
     currentStream = await navigator.mediaDevices.getUserMedia({
         video: {
             facingMode: usingFront ? "user" : "environment",
-            width: { ideal: 1080 },
-            height: { ideal: 1920 }
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
         },
         audio: true
     });
 
-    // Mostramos en pantalla
     video.srcObject = currentStream;
 
-    // Sacamos la nueva pista de vídeo
     const newVideoTrack = currentStream.getVideoTracks()[0];
-    const newAudioTrack = currentStream.getAudioTracks()[0];
 
-    // Primera vez
     if (!recordingStream) {
-        recordingStream = new MediaStream([newVideoTrack, newAudioTrack]);
-        return;
+        recordingStream = new MediaStream([
+            newVideoTrack,
+            currentStream.getAudioTracks()[0]
+        ]);
+    } else {
+        const oldTrack = recordingStream.getVideoTracks()[0];
+        recordingStream.removeTrack(oldTrack);
+        // ❗ NO detener oldTrack para que no corte la grabación
+        recordingStream.addTrack(newVideoTrack);
     }
-
-    // Si ya está entrando en MediaRecorder, sustituimos la pista
-    const oldVideoTrack = recordingStream.getVideoTracks()[0];
-
-    recordingStream.removeTrack(oldVideoTrack);
-    recordingStream.addTrack(newVideoTrack);
-
-    // NO paramos oldVideoTrack → evita que se corte la grabación
 }
 
 startCamera();
 
 /* ============================================
-   GRABACIÓN: SOLO STREAM NATIVO
+   CREAR CANVAS PARA GRABAR OVERLAYS
 ============================================ */
-recBtn.onclick = () => {
-    if (!isRecording) startRecording();
-    else stopRecording();
-};
+let canvas = document.createElement("canvas");
+let ctx = canvas.getContext("2d");
+canvas.style.display = "none"; // nunca visible
+document.body.appendChild(canvas);
 
-function startRecording() {
-    recordedChunks = [];
-    isRecording = true;
+/* ============================================
+   LOOP QUE DIBUJA EN EL CANVAS
+============================================ */
+function drawCanvasFrame() {
+    if (!isRecording) return;
 
-    /* ————————————————
-       TRUCO PARA FORZAR VERTICAL:
-       Creamos un nuevo MediaStream y marcamos
-       la pista de vídeo como "portrait".
-       Safari usa esto para grabar vertical.
-    ———————————————— */
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
 
-    const videoTrack = recordingStream.getVideoTracks()[0];
-    const audioTrack = recordingStream.getAudioTracks()[0];
-
-    try {
-        videoTrack.applyConstraints({
-            width: { ideal: 1080 },
-            height: { ideal: 1920 },
-            aspectRatio: 9/16
-        });
-    } catch(e) {
-        console.log("Safari ignoró las constraints (normal).");
+    if (vw === 0 || vh === 0) {
+        requestAnimationFrame(drawCanvasFrame);
+        return;
     }
 
-    // MediaRecorder directamente del stream nativo
-    mediaRecorder = new MediaRecorder(recordingStream, {
-        mimeType: "video/webm;codecs=vp9",
-        videoBitsPerSecond: 6_000_000
+    // Ajustar canvas a resolución nativa de la cámara
+    canvas.width = vw;
+    canvas.height = vh;
+
+    // --- Dibuja vídeo ---
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // --- Obtener posiciones exactas desde la pantalla ---
+    const rectVideo = video.getBoundingClientRect();
+
+    function drawElement(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        const r = el.getBoundingClientRect();
+        const x = (r.left - rectVideo.left) * (vw / rectVideo.width);
+        const y = (r.top - rectVideo.top) * (vh / rectVideo.height);
+        const w = r.width * (vw / rectVideo.width);
+        const h = r.height * (vh / rectVideo.height);
+
+        if (el.tagName === "IMG") {
+            ctx.drawImage(el, x, y, w, h);
+        } else {
+            ctx.font = `${h * 0.8}px Arial`;
+            ctx.fillStyle = "white";
+            ctx.fillText(el.innerText, x, y + h);
+        }
+    }
+
+    // Overlays principales
+    drawElement("userIcon");
+    drawElement("eyeIcon");
+    drawElement("viewersNumber");
+    drawElement("viewersLabel");
+    if (liveIcon.style.display !== "none") drawElement("liveIcon");
+
+    // Comentarios
+    Array.from(commentsBox.children).forEach(comment => {
+        const r = comment.getBoundingClientRect();
+        const x = (r.left - rectVideo.left) * (vw / rectVideo.width);
+        const y = (r.top - rectVideo.top) * (vh / rectVideo.height);
+        ctx.font = `${r.height * (vw / rectVideo.width) * 0.75}px Arial`;
+        ctx.fillStyle = "white";
+        ctx.fillText(comment.innerText, x, y);
     });
 
-    mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
-    };
+    // Iconos inferiores
+    drawElement("recBtn");
+    drawElement("camBtn");
+    drawElement("heartBtn");
 
+    requestAnimationFrame(drawCanvasFrame);
+}
+
+/* ============================================
+   EMPIEZA GRABACIÓN
+============================================ */
+function startRecording() {
+    recordedChunks = [];
+
+    // Obtener stream del canvas (con audio del micrófono)
+    const canvasStream = canvas.captureStream(30);
+    const audioTrack = recordingStream.getAudioTracks()[0];
+    canvasStream.addTrack(audioTrack);
+
+    mediaRecorder = new MediaRecorder(canvasStream, {
+        mimeType: "video/webm;codecs=vp9"
+    });
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
     mediaRecorder.onstop = saveRecording;
 
-    mediaRecorder.start(200);
+    mediaRecorder.start();
+    isRecording = true;
 
     liveIcon.style.display = "block";
     liveIcon.classList.add("blink");
+
+    requestAnimationFrame(drawCanvasFrame);
 }
 
+/* ============================================
+   STOP GRABACIÓN
+============================================ */
 function stopRecording() {
     isRecording = false;
     liveIcon.style.display = "none";
     liveIcon.classList.remove("blink");
-
     mediaRecorder.stop();
 }
 
 /* ============================================
-   GUARDAR WEBM VERTICAL
+   GUARDAR ARCHIVO
 ============================================ */
 function saveRecording() {
     const blob = new Blob(recordedChunks, { type: "video/webm" });
@@ -127,26 +175,20 @@ function saveRecording() {
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = "stream_vertical.webm";
+    a.download = "stream_recording.webm";
     a.click();
 
     URL.revokeObjectURL(url);
 }
 
 /* ============================================
-   CAMBIAR CÁMARA SIN CORTAR
+   BOTONES
 ============================================ */
+recBtn.onclick = () => !isRecording ? startRecording() : stopRecording();
+
 camBtn.onclick = async () => {
     usingFront = !usingFront;
     await startCamera();
-
-    if (isRecording && mediaRecorder.state === "recording") {
-        // Minipausa para evitar tirones
-        mediaRecorder.pause();
-        setTimeout(() => {
-            mediaRecorder.resume();
-        }, 100);
-    }
 };
 
 /* ============================================
@@ -158,7 +200,7 @@ const emojis = ["🔥","👍"];
 
 function addComment() {
     const name = names[Math.floor(Math.random()*names.length)];
-    const msg  = texts[Math.floor(Math.random()*texts.length)];
+    const msg = texts[Math.floor(Math.random()*texts.length)];
     const emoji = Math.random() < 0.4 ? emojis[Math.floor(Math.random()*2)] : "";
 
     const div = document.createElement("div");
@@ -166,11 +208,10 @@ function addComment() {
     div.textContent = `${name}: ${msg} ${emoji}`;
 
     commentsBox.appendChild(div);
-
-    if (commentsBox.children.length > 6)
+    if (commentsBox.children.length > 6) {
         commentsBox.removeChild(commentsBox.children[0]);
+    }
 }
-
 setInterval(addComment, 2200);
 
 /* ============================================
